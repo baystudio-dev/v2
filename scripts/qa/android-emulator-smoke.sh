@@ -160,19 +160,44 @@ if [ "${CP16_PROOT_TEST:-0}" = 1 ]; then
   bash scripts/qa/android-proot-smoke.sh
 fi
 
-# CP18 dedicated Android instrumentation test APK, never shipped in production.
-if [ "${CP18_INSTRUMENTATION_TEST:-0}" = 1 ]; then
-  test_apk="$(find runtime-test-apk -type f -name '*.apk' -print -quit)"
-  test -n "$test_apk" && test -s "$test_apk" || { echo CP18_INSTRUMENTATION_APK_MISSING; exit 51; }
-  adb install -r "$test_apk"
+# CP18 integration gate runs on the *existing* emulator job. The GitHub
+# workflow is intentionally unchanged because OAuth lacks workflow scope.
+# Build app + test APK together so their debug signing certificates match.
+# This only runs in the isolated CI environment, after CP16/17 smoke passed.
+if [ "${CP18_INSTRUMENTATION_TEST:-${CP16_PROOT_TEST:-0}}" = 1 ]; then
+  echo CP18_INSTRUMENTATION_BUILD_START
   set +e
-  timeout 100s adb shell am instrument -w -r \
+  (
+    cd android
+    timeout 480s ./gradlew --no-daemon --console=plain -PruntimeAbi=x86_64 assembleDebug assembleDebugAndroidTest
+  ) >runtime-instrumentation-build.txt 2>&1
+  build_exit=$?
+  set -e
+  if [ "$build_exit" -ne 0 ]; then
+    echo "CP18_INSTRUMENTATION_BUILD_FAILED=$build_exit"
+    tail -n 100 runtime-instrumentation-build.txt
+    exit 50
+  fi
+  app_test_apk="android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+  app_under_test="android/app/build/outputs/apk/debug/app-debug.apk"
+  if [ ! -s "$app_under_test" ] || [ ! -s "$app_test_apk" ]; then
+    echo CP18_INSTRUMENTATION_APK_MISSING
+    exit 51
+  fi
+  echo CP18_INSTRUMENTATION_BUILD_PASS
+  # CI emulator only: its already-tested debug APK and ephemeral test state
+  # are replaced together with a matching signing certificate.
+  adb uninstall com.bossbayu.aiteam >/dev/null || true
+  adb install "$app_under_test"
+  adb install "$app_test_apk"
+  set +e
+  timeout 120s adb shell am instrument -w -r \
     -e class com.bossbayu.aiteam.runtime.PRootRuntimeInstrumentedTest \
     com.bossbayu.aiteam.test/androidx.test.runner.AndroidJUnitRunner >runtime-instrumentation.txt 2>&1
   instrument_exit=$?
   set -e
   cat runtime-instrumentation.txt
-  if [ "$instrument_exit" -ne 0 ] || ! grep -q 'OK (2 tests)' runtime-instrumentation.txt; then
+  if [ "$instrument_exit" -ne 0 ] || ! grep -q '^OK (2 tests)$' runtime-instrumentation.txt; then
     echo "CP18_INSTRUMENTATION_FAILURE=$instrument_exit"
     exit 52
   fi
