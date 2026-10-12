@@ -197,7 +197,7 @@ if [ "${CP18_INSTRUMENTATION_TEST:-${CP16_PROOT_TEST:-0}}" = 1 ]; then
   instrument_exit=$?
   set -e
   cat runtime-instrumentation.txt
-  if [ "$instrument_exit" -ne 0 ] || ! grep -q '^OK (2 tests)$' runtime-instrumentation.txt; then
+  if [ "$instrument_exit" -ne 0 ] || ! grep -q '^OK (4 tests)$' runtime-instrumentation.txt; then
     echo "CP18_INSTRUMENTATION_FAILURE=$instrument_exit"
     exit 52
   fi

@@ -21,7 +21,7 @@ test("CP17 terminal never reports ready before guest process actually responds",
   assert.match(terminal,/CP16_TERMINAL_SHELL_STARTED/);
   assert.match(terminal,/val exitCode = proc\.waitFor\(\)/);
   assert.match(terminal,/Terminal selesai \(exit=\$exitCode\)/);
-  assert.match(terminal,/Shell belum siap atau sudah berhenti/);
+  assert.match(terminal,/shell belum siap, antrean penuh, atau sudah berhenti/);
 });
 
 test("CP17 terminal remains pipe-backed and serialized, without false PTY support",()=>{

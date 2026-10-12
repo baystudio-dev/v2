@@ -13,7 +13,7 @@ test("CP18 deploys actual instrumentation APK and fails closed on missing test s
   assert.ok(smoke.includes("CP18_INSTRUMENTATION_TEST:-${CP16_PROOT_TEST:-0}"));
   assert.ok(smoke.includes('adb install "$app_test_apk"'));
   assert.match(smoke,/am instrument -w -r/);
-  assert.match(smoke,/OK \(2 tests\)/);
+  assert.ok(smoke.includes("OK (4 tests)"));
   assert.match(smoke,/CP18_INSTRUMENTATION_FAILURE/);
 });
 test("CP18 read-only Android app-UID integration tests exercise the real launcher and shell pipes",()=>{

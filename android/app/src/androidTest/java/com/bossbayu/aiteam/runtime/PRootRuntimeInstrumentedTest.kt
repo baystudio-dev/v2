@@ -60,4 +60,68 @@ class PRootRuntimeInstrumentedTest {
             session.close()
         }
     }
+
+    @Test
+    fun multipleCommandsInOrderAndExitAreObserved() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val workstation = WorkstationManager(context)
+        workstation.ensureWorkstationsReady()
+        val ready = CountDownLatch(1)
+        val finished = CountDownLatch(1)
+        val transcript = StringBuilder()
+        val terminal = TerminalSession(workstation, PRootManager(context), null) { chunk ->
+            synchronized(transcript) {
+                transcript.append(chunk.take(2048))
+                if (transcript.contains("CP16_TERMINAL_SHELL_STARTED")) ready.countDown()
+                if (transcript.contains("Terminal selesai (exit=0)")) finished.countDown()
+            }
+        }
+        try {
+            terminal.start()
+            assertTrue("Startup timeout", ready.await(25, TimeUnit.SECONDS))
+            for (index in 1..8) {
+                terminal.sendCommand("printf 'CP19_STEP_${index}\n'")
+            }
+            terminal.sendCommand("exit 0")
+            assertTrue("Shell did not exit", finished.await(25, TimeUnit.SECONDS))
+            val result = synchronized(transcript) { transcript.toString() }
+            var offset = 0
+            for (index in 1..8) {
+                val marker = "CP19_STEP_$index"
+                val next = result.indexOf(marker, offset)
+                assertTrue("Missing/out-of-order command: $marker", next >= offset)
+                offset = next + marker.length
+            }
+        } finally {
+            terminal.close()
+        }
+    }
+
+    @Test
+    fun immediateCloseDoesNotResurrectSessionAndNewSessionWorks() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val workstation = WorkstationManager(context)
+        workstation.ensureWorkstationsReady()
+        val oldSession = TerminalSession(workstation, PRootManager(context), null) {}
+        oldSession.start()
+        oldSession.close()
+        oldSession.sendCommand("printf CP19_CLOSED_MUST_NOT_RUN")
+        oldSession.start()
+
+        val ready = CountDownLatch(1)
+        val observed = CountDownLatch(1)
+        val reopened = TerminalSession(workstation, PRootManager(context), null) { chunk ->
+            if (chunk.contains("CP16_TERMINAL_SHELL_STARTED")) ready.countDown()
+            if (chunk.contains("CP19_REOPENED_PASS")) observed.countDown()
+        }
+        try {
+            reopened.start()
+            assertTrue("Reopened shell startup timed out", ready.await(25, TimeUnit.SECONDS))
+            reopened.sendCommand("printf CP19_REOPENED_PASS")
+            assertTrue("Reopened shell did not execute", observed.await(25, TimeUnit.SECONDS))
+        } finally {
+            reopened.close()
+        }
+    }
+
 }
