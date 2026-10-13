@@ -15,3 +15,5 @@ Start here: [Master Blueprint](../docs/BLUEPRINT_MASTER_V2.md), [Living Checkpoi
 **Rule:** A checkpoint's partial subtasks can carry ✅, but full CP acceptance requires device/API evidence and all relevant tests.
 
 CP16 follow-up: [Synthetic chat persistence gate](CP16/CHAT_PERSISTENCE_GATE_20261013.md), desktop hard-restart and Android emulator force-stop persistence PASS (CI 38369849285).
+
+CP16: [Atomic snapshot storage and fault handling](CP16/ATOMIC_CHAT_STORAGE_20261013.md), 67 local tests passed; fresh Android CI pending.

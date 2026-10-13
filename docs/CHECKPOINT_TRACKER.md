@@ -95,6 +95,9 @@ Active CP16 branch: feature/v2-android-build-admission-20261008 (local)
 - [x] **CI 38369849285 PASS**: Android 36 x86_64 chat persistence after force-stop; five exact messages preserved; production PRoot and four instrumentation tests retained. Desktop baseline **43/43 PASS**. Evidence: checkpoints/CP16/CHAT_PERSISTENCE_GATE_20261013.md.
 - [ ] Interrupted-write, full-disk and power-loss durability not verified. Physical ARM64 remains NOT TESTED.
 
+- [x] Atomic chat snapshot implementation and explicit pre/post-commit storage errors: **67/67 local tests PASS**, including real SIGKILL at four write boundaries and disposable HTTP syscall-fault tests. Evidence: checkpoints/CP16/ATOMIC_CHAT_STORAGE_20261013.md.
+- [ ] Fresh Android CI for atomic writer PENDING. Physical full-disk/power-loss and ARM64 runtime NOT TESTED.
+
 ## CP17 Personal release
 - ⬜ [ ] Personal APK, source ZIP, SBOM/licenses, no credentials and clean history.
 

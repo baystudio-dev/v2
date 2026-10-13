@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { execFile, spawn, spawnSync } = require("child_process");
 const { getTeamRegistry } = require("./agent/team-registry");
+const { AtomicChatStore, ChatStorageError } = require("./agent/atomic-chat-store");
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "127.0.0.1";
@@ -866,17 +867,21 @@ function getRuntimeHealth() {
   };
 }
 
-// Helper to load persisted data
+// Only an absent file means a new account. Corrupt/unreadable data is not reset.
+const chatStore = new AtomicChatStore(CHAT_DATA_FILE);
+let chatStorageReadError = null;
+let chatStorageWriteBlock = null;
+let chatStorageStatus = { state: "ready", writable: true, atomicReplacement: true };
 function loadInitialData() {
   try {
-    if (fs.existsSync(CHAT_DATA_FILE)) {
-      const parsed = JSON.parse(fs.readFileSync(CHAT_DATA_FILE, "utf-8"));
-      return parsed;
-    }
-  } catch (e) {
-    console.error("Load initial chat_data error:", e);
+    return chatStore.read();
+  } catch (error) {
+    chatStorageReadError = error;
+    chatStorageWriteBlock = error;
+    chatStorageStatus = { state: "unavailable", writable: false, ...error.toPublic() };
+    console.error("Chat storage unavailable:", error.code, error.reason);
+    return null;
   }
-  return null;
 }
 
 const savedData = loadInitialData() || {};
@@ -950,26 +955,63 @@ let state = {
   }
 };
 
+// Preserve legacy serialization and unknown top-level fields without changing UI.
+function persistedChatSnapshot() {
+  return {
+    ...savedData,
+    topic: state.topic,
+    modelA: state.modelA,
+    modelB: state.modelB,
+    chats: state.chats,
+    statuses: state.statuses,
+    calls: state.calls,
+    internalPeer: state.internalPeer || [],
+    contextMemory: state.contextMemory || { group: "", direct_budi: "", direct_rian: "" }
+  };
+}
+// Retain serialized last-committed state, not an extra deep object per save.
+let committedChatJSON = JSON.stringify(persistedChatSnapshot(), null, 2);
+const PERSISTED_CHAT_KEYS = ["topic", "modelA", "modelB", "chats", "statuses", "calls", "internalPeer", "contextMemory"];
 function saveChatData() {
+  let serialized;
   try {
-    const dataToSave = {
-      topic: state.topic,
-      modelA: state.modelA,
-      modelB: state.modelB,
-      chats: state.chats,
-      statuses: state.statuses,
-      calls: state.calls,
-      internalPeer: state.internalPeer || [],
-      contextMemory: state.contextMemory || {
-        group: "",
-        direct_budi: "",
-        direct_rian: ""
-      }
-    };
-    fs.writeFileSync(CHAT_DATA_FILE, JSON.stringify(dataToSave, null, 2));
-  } catch (e) {
-    console.error("Save chat_data error:", e);
+    if (chatStorageWriteBlock) {
+      throw chatStorageReadError || new ChatStorageError("CHAT_STORAGE_RECONCILIATION_REQUIRED");
+    }
+    serialized = JSON.stringify(persistedChatSnapshot(), null, 2);
+    chatStore.writeSerialized(serialized);
+    committedChatJSON = serialized;
+    chatStorageStatus = { state: "ready", writable: true, atomicReplacement: true, directorySynced: true };
+  } catch (error) {
+    const failure = error instanceof ChatStorageError ? error :
+      new ChatStorageError("CHAT_STORAGE_WRITE_FAILED", { reason: error.code });
+    if (failure.committed) {
+      // Rename succeeded. Do not lie by rolling RAM back to a stale on-disk state.
+      committedChatJSON = serialized;
+      chatStorageWriteBlock = failure;
+    } else {
+      const previous = JSON.parse(committedChatJSON);
+      for (const key of PERSISTED_CHAT_KEYS) state[key] = previous[key];
+    }
+    // No automatic model scheduling/retry after an unpersisted state change.
+    state.isRunning = false;
+    state.isStopped = true;
+    if (nextTurnTimeout) { clearTimeout(nextTurnTimeout); nextTurnTimeout = null; }
+    pendingUserTurn = false;
+    chatStorageStatus = { state: (failure.committed || chatStorageWriteBlock?.committed) ? "durability-unconfirmed" :
+      (chatStorageReadError ? "unavailable" : "write-failed"),
+      writable: !chatStorageWriteBlock, atomicReplacement: true, ...failure.toPublic() };
+    broadcastSSE("storage_error", failure.toPublic());
+    throw failure;
   }
+}
+
+function sendChatStorageFailure(res, error) {
+  if (!(error instanceof ChatStorageError)) return false;
+  if (res.headersSent) { res.destroy(); return true; }
+  res.writeHead(error.statusCode, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+  res.end(JSON.stringify({ success: false, ...error.toPublic() }));
+  return true;
 }
 
 let nextTurnTimeout = null;
@@ -1154,7 +1196,11 @@ function cleanupExpiredStatuses() {
 
 // Background cleanup every 60 seconds
 setInterval(() => {
-  cleanupExpiredStatuses();
+  if (chatStorageWriteBlock) return;
+  try { cleanupExpiredStatuses(); }
+  catch (error) {
+    if (!(error instanceof ChatStorageError)) console.error("Status cleanup failed");
+  }
 }, 60000);
 
 function createStatus(author, authorName, text, bgGradient = null, imageUrl = null) {
@@ -2425,6 +2471,7 @@ function handleUserMessage(text, chatId = "group", quoted = null, meta = {}) {
 function getPublicStatus() {
   const totalMsgs = Object.values(state.chats).reduce((acc, arr) => acc + (arr ? arr.length : 0), 0);
   return {
+    chatStorage: { ...chatStorageStatus },
     topic: state.topic,
     modelA: state.modelA,
     modelB: state.modelB,
@@ -2473,7 +2520,7 @@ setInterval(() => {
 }, 15000);
 
 // HTTP Server
-const server = http.createServer((req, res) => {
+function handleHttpRequest(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || "localhost:" + PORT}`);
 
   // Antigravity integration is disabled by product policy and current Google Terms.
@@ -2518,6 +2565,7 @@ const server = http.createServer((req, res) => {
 
   // API Routes
   if (url.pathname === "/api/events") {
+    if (chatStorageReadError) { sendChatStorageFailure(res, chatStorageReadError); return; }
     res.writeHead(200, {
       "Content-Type": "text/event-stream; charset=utf-8",
       "Cache-Control": "no-cache, no-transform",
@@ -2566,6 +2614,7 @@ const server = http.createServer((req, res) => {
   }
 
   if (url.pathname === "/api/chats" && req.method === "GET") {
+    if (chatStorageReadError) { sendChatStorageFailure(res, chatStorageReadError); return; }
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({ chats: state.chats, status: getPublicStatus() }));
     return;
@@ -2623,6 +2672,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true, active: activeWorkstation }));
       } catch (err) {
+        if (sendChatStorageFailure(res, err)) return;
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: err.message }));
       }
@@ -2667,6 +2717,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true, delivered: true }));
       } catch (err) {
+        if (sendChatStorageFailure(res, err)) return;
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: err.message }));
       }
@@ -2703,6 +2754,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, message: msg }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -2806,6 +2858,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, message: msg }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -2870,6 +2923,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, message: peerMsg }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -2959,6 +3013,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, statusItem }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -2979,6 +3034,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, statuses: state.statuses }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3024,6 +3080,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, chatId: targetChatId }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3043,6 +3100,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify(result));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3081,6 +3139,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, activeProfile: switched, vault: getPublicAuthVault() }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3098,6 +3157,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, profile: added, vault: getPublicAuthVault() }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3115,6 +3175,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, vault: getPublicAuthVault() }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3133,6 +3194,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, ...result }));
       } catch (err) {
+        if (sendChatStorageFailure(res, err)) return;
         res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: err.message }));
       }
@@ -3170,6 +3232,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: ok }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3198,6 +3261,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, vault: getPublicAuthVault() }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3238,6 +3302,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, call: callRecord }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3260,6 +3325,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, replySpeech, speaker: contactId === "rian" ? "Rian" : "Budi" }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3281,6 +3347,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3315,6 +3382,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, call: callRecord }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3361,6 +3429,7 @@ Tulis 1 pesan inisiatif japri (1-2 kalimat) yang ramah dan solutif ke Boss Bayu.
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, message: cleanText, chatId: targetChatId }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3445,6 +3514,7 @@ Tulis 1 pesan inisiatif japri (1-2 kalimat) yang ramah dan solutif ke Boss Bayu.
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, file: record, message: msg }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3478,6 +3548,7 @@ Tulis 1 pesan inisiatif japri (1-2 kalimat) yang ramah dan solutif ke Boss Bayu.
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, status: getPublicStatus() }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3497,6 +3568,7 @@ Tulis 1 pesan inisiatif japri (1-2 kalimat) yang ramah dan solutif ke Boss Bayu.
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, status: getPublicStatus() }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3534,6 +3606,7 @@ Tulis 1 pesan inisiatif japri (1-2 kalimat) yang ramah dan solutif ke Boss Bayu.
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, status: getPublicStatus() }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3561,6 +3634,7 @@ Tulis 1 pesan inisiatif japri (1-2 kalimat) yang ramah dan solutif ke Boss Bayu.
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3597,6 +3671,7 @@ Tulis 1 pesan inisiatif japri (1-2 kalimat) yang ramah dan solutif ke Boss Bayu.
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, wakelock: wl, status: getPublicStatus() }));
       } catch (e) {
+        if (sendChatStorageFailure(res, e)) return;
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }
@@ -3647,6 +3722,15 @@ Tulis 1 pesan inisiatif japri (1-2 kalimat) yang ramah dan solutif ke Boss Bayu.
       res.end(content);
     }
   });
+}
+
+const server = http.createServer((req, res) => {
+  try { handleHttpRequest(req, res); }
+  catch (error) {
+    if (sendChatStorageFailure(res, error)) return;
+    if (!res.headersSent) res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ error: "Internal request error" }));
+  }
 });
 
 server.on("error", (err) => {

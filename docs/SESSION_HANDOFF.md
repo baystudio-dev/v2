@@ -1,5 +1,13 @@
 # SESSION HANDOFF • WhatsApp Agent V2
 
+## Latest work: atomic chat storage (2026-10-13)
+- Based on `bec0972`, isolated worktree `/home/sprite/v2-atomic-chat-20261013` on `qa/cp16-atomic-chat-20261013`. Preserve original PTY/CMake work; no native/UI edits in this checkpoint.
+- New `agent/atomic-chat-store.js`: sibling 0600 temp, full write, fsync file, close, rename, fsync directory. Pre-rename failures roll persisted RAM back; post-rename sync uncertainty is reported and blocks blind retries.
+- Corrupt startup history stays untouched/read-only. HTTP storage errors are typed/redacted, not success or generic malformed-request errors.
+- Local baseline **67/67 PASS**. Fresh Android CI pending; no claim of physical power-loss or full-disk validation.
+- Report: `checkpoints/CP16/ATOMIC_CHAT_STORAGE_20261013.md`.
+
+
 ## Latest verified continuation: chat persistence (2026-10-13)
 - Green run **38369849285**, tested source `628a0c36feaee4c85be8f64e4602f3d4fefae11b`: all four CI jobs PASS, desktop baseline **43/43**, Android chat persistence count=5 after force-stop/new PIDs, production PRoot and `OK (4 tests)` instrumentation retained.
 - Report: `checkpoints/CP16/CHAT_PERSISTENCE_GATE_20261013.md`.
