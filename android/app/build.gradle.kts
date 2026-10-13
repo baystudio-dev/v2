@@ -206,9 +206,7 @@ android {
             // PRoot is packaged as libproot_exec.so but executed via ProcessBuilder.
             // It therefore must exist as a real file in nativeLibraryDir.
             useLegacyPackaging = true
-            // PRoot is executed as an ELF program, not loaded through JNI.
-            // Stripping it mutates verified upstream bytes and invalidates the
-            // executable integrity gate after APK extraction.
+            // Preserve executable PRoot bytes for verified APK integrity checks.
             keepDebugSymbols.add("**/libproot_exec.so")
         }
     }

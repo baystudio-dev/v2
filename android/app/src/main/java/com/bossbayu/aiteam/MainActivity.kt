@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { _ ->
-        // Permissions evaluated by WebView callbacks when needed.
+        // WebView callbacks handle permission results.
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
