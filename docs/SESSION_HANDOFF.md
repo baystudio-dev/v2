@@ -1,5 +1,13 @@
 # SESSION HANDOFF • WhatsApp Agent V2
 
+## Latest verified continuation: chat persistence (2026-10-13)
+- Green run **38369849285**, tested source `628a0c36feaee4c85be8f64e4602f3d4fefae11b`: all four CI jobs PASS, desktop baseline **43/43**, Android chat persistence count=5 after force-stop/new PIDs, production PRoot and `OK (4 tests)` instrumentation retained.
+- Report: `checkpoints/CP16/CHAT_PERSISTENCE_GATE_20261013.md`.
+- New publication worktree: `/home/sprite/v2-chat-persistence-20261013` on `qa/cp16-chat-persistence-20261013`, pushed to PR #1's existing feature branch. Verify remote HEAD before further work.
+- **Preserve** original worktree `/home/sprite/v2-cp16-gh-publish-1009`: its uncommitted CMake/PTY probe files were not touched or included. Do not reset or clean that worktree.
+- Current remaining gates: partial-write/disk-error durability, real PTY and UI/IME, physical ARM64 runtime, authenticated room privacy and live agents. No main merge; PR remains draft.
+
+
 ## Wajib dibaca pertama kali saat sesi baru
 1. Baca docs/BLUEPRINT_MASTER_V2.md untuk keputusan produk/arsitektur.
 2. Baca docs/CHECKPOINT_TRACKER.md untuk 25 checkpoint dan setiap ✅ yang punya bukti.

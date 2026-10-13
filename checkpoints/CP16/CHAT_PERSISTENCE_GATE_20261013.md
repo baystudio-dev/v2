@@ -29,3 +29,17 @@
 
 ## Supporting command semantics
 Android Developers, ADB activity-manager reference: https://developer.android.com/tools/adb#am
+
+## Verified Android and desktop CI result
+- **Run 38369849285: all four jobs PASS.** https://github.com/bayurohmat608-create/v2/actions/runs/38369849285
+- Tested application/test source commit: `628a0c36feaee4c85be8f64e4602f3d4fefae11b`.
+- Desktop CI actually executed the new baseline suite: **43 tests, 43 pass, 0 fail**. This includes the actual server process's three SIGKILL restarts and the eight negative controls.
+- Android API 36 x86_64: `CP16_CHAT_PERSISTENCE_SEEDED count=5`, followed by cold restart with new UI PID 2709 and engine PID 2761, then `CP16_CHAT_PERSISTENCE_PASS count=5` and `CP16_ANDROID_CHAT_PERSISTENCE_PASS`.
+- Production PRoot remained green: `CP17_PROOT_PRODUCTION_READONLY_SMOKE_PASS`.
+- All four existing PRoot/terminal lifecycle instrumentation tests also remained green: `OK (4 tests)` and `CP18_PROOT_MANAGER_AND_TERMINAL_INSTRUMENTATION_PASS`.
+- Android ARM64 and x86_64 build/lint/ZIP alignment jobs both passed. **ARM64 device runtime is still NOT TESTED**, not inferred from the ARM64 build.
+- No source changes to `server.js`, native/runtime Kotlin/C++, JNI binaries, or UI were made in this checkpoint.
+- Pre-existing uncommitted PTY work was preserved in its original worktree; only the new persistence worktree is clean.
+
+### Next unverified reliability boundary
+The successful gate demonstrates survival of completed/acknowledged writes across process termination. It does not demonstrate an interrupted write, full-disk behavior, or power-loss durability. The direct-write/error-swallowing behavior noted above remains a separate reliability issue for a later implementation checkpoint. No claim of end-to-end private-room authorization or live agent execution is made.
