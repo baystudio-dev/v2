@@ -1,5 +1,14 @@
 # SESSION HANDOFF • WhatsApp Agent V2
 
+## Latest continuation: opt-in message retry receipts (2026-10-13)
+- Based on `54a0482`, isolated worktree `/home/sprite/v2-message-retry-20261013`, local branch `qa/cp16-message-retry-20261013`. Original 37-file PTY/CMake WIP fingerprint preserved.
+- `agent/message-receipts.js` adds bounded persistent idempotency for explicitly keyed user messages with triggerTurn=false in the three legacy rooms. No UI/agent wiring changed.
+- Message and receipt share one atomic save/rollback boundary. Same-payload retries return the existing message without saving or broadcasting. Conflicts, edited/deleted messages, invalid ledgers and capacity fail explicitly.
+- Local **84/84 PASS**, including real SIGKILL after commit but before HTTP response. Android's shared probe retries three keys after restart; fresh CI is PENDING.
+- Report: `checkpoints/CP16/MESSAGE_RETRY_RECEIPTS_20261013.md`.
+- Receipt capacity 2048 with no silent eviction; auth, agent/tool execution, multiprocess writes, retention/migration, physical ARM64 and PTY remain separate gates. PR stays draft.
+
+
 ## Latest work: atomic chat storage (2026-10-13)
 - Based on `bec0972`, isolated worktree `/home/sprite/v2-atomic-chat-20261013` on `qa/cp16-atomic-chat-20261013`. Preserve original PTY/CMake work; no native/UI edits in this checkpoint.
 - New `agent/atomic-chat-store.js`: sibling 0600 temp, full write, fsync file, close, rename, fsync directory. Pre-rename failures roll persisted RAM back; post-rename sync uncertainty is reported and blocks blind retries.

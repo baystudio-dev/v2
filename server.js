@@ -4,6 +4,7 @@ const path = require("path");
 const { execFile, spawn, spawnSync } = require("child_process");
 const { getTeamRegistry } = require("./agent/team-registry");
 const { AtomicChatStore, ChatStorageError } = require("./agent/atomic-chat-store");
+const { MessageReceiptError, prepareMessageRequest, emptyReceipts, findMessageReplay, appendMessageReceipt } = require("./agent/message-receipts");
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "127.0.0.1";
@@ -936,6 +937,7 @@ let state = {
   peerJapriAllowed: false,
   peerJapriRemaining: 0,
   internalPeer: savedData.internalPeer || [],
+  messageReceipts: savedData.messageReceipts || emptyReceipts(),
   contextMemory: savedData.contextMemory || {
     group: "",
     direct_budi: "",
@@ -966,12 +968,13 @@ function persistedChatSnapshot() {
     statuses: state.statuses,
     calls: state.calls,
     internalPeer: state.internalPeer || [],
+    messageReceipts: state.messageReceipts,
     contextMemory: state.contextMemory || { group: "", direct_budi: "", direct_rian: "" }
   };
 }
 // Retain serialized last-committed state, not an extra deep object per save.
 let committedChatJSON = JSON.stringify(persistedChatSnapshot(), null, 2);
-const PERSISTED_CHAT_KEYS = ["topic", "modelA", "modelB", "chats", "statuses", "calls", "internalPeer", "contextMemory"];
+const PERSISTED_CHAT_KEYS = ["topic", "modelA", "modelB", "chats", "statuses", "calls", "internalPeer", "contextMemory", "messageReceipts"];
 function saveChatData() {
   let serialized;
   try {
@@ -1077,7 +1080,7 @@ function addSystemMessage(text, chatId = "group") {
   return msg;
 }
 
-function addChatMessage({ sender, senderName, text, side, model, chatId = "group", quoted = null, type = "chat", duration = null }) {
+function addChatMessage({ sender, senderName, text, side, model, chatId = "group", quoted = null, type = "chat", duration = null }, receiptRequest = null) {
   const msg = {
     id: "msg-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
     chatId: chatId || "group",
@@ -1092,6 +1095,8 @@ function addChatMessage({ sender, senderName, text, side, model, chatId = "group
     time: nowTime(),
     ticks: side === "right"
   };
+  // Receipt and message commit in the SAME snapshot; failed writes roll both back.
+  if (receiptRequest) appendMessageReceipt(state.messageReceipts, receiptRequest, msg.id);
   const targetId = chatId || "group";
   if (!state.chats[targetId]) state.chats[targetId] = [];
   state.chats[targetId].push(msg);
@@ -1099,7 +1104,7 @@ function addChatMessage({ sender, senderName, text, side, model, chatId = "group
   broadcastSSE("message", msg);
 
   // Auto-compress if chat history becomes large (> 25 messages) to prevent memory overload
-  if (state.chats[targetId].length >= 25 && state.chats[targetId].length % 15 === 0) {
+  if (!receiptRequest && state.chats[targetId].length >= 25 && state.chats[targetId].length % 15 === 0) {
     try {
       compressChatContext(targetId);
       console.log(`[Auto-Compaction] Konteks ${targetId} otomatis dipadatkan (panjang: ${state.chats[targetId].length})`);
@@ -2769,6 +2774,19 @@ function handleHttpRequest(req, res) {
     req.on("end", () => {
       try {
         const data = JSON.parse(body || "{}");
+        // Opt-in append dedupe only. Triggered AI/tool work needs its own durable job journal.
+        if (data && Object.hasOwn(data, "idempotencyKey")) {
+          const request = prepareMessageRequest(data);
+          if (chatStorageWriteBlock) {
+            throw chatStorageReadError || new ChatStorageError("CHAT_STORAGE_RECONCILIATION_REQUIRED");
+          }
+          const replay = findMessageReplay(state.messageReceipts, state.chats, request);
+          const message = replay || addChatMessage({ ...request.fields, side: "right" }, request);
+          res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+          res.end(JSON.stringify({ success: true, message, idempotency: { replayed: Boolean(replay) } }));
+          return;
+        }
+
         let targetChatId = data.chatId || "group";
         const sender = data.sender || "ai1";
         const senderName = data.senderName || (sender === "ai1" ? "Budi" : (sender === "ai2" ? "Rian" : "Bayu"));
@@ -2859,6 +2877,12 @@ function handleHttpRequest(req, res) {
         res.end(JSON.stringify({ success: true, message: msg }));
       } catch (e) {
         if (sendChatStorageFailure(res, e)) return;
+        if (e instanceof MessageReceiptError) {
+          res.writeHead(e.statusCode, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+          res.end(JSON.stringify(e.toPublic()));
+          return;
+        }
+
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: e.message }));
       }

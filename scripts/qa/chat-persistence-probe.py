@@ -96,11 +96,14 @@ def seed(base: str, proof_path: Path) -> int:
         ("direct_budi", "Synthetic voice-note metadata " + nonce, "voice_note", "00:07"),
     )
     first = None
-    for room, text, kind, duration in plan:
+    retry_requests = []
+    for index, (room, text, kind, duration) in enumerate(plan):
         quoted = {"id": first["id"], "text": first["text"], "senderName": first["senderName"]} if first and room == "group" else None
         payload = {"chatId": room, "sender": "user", "senderName": "QA synthetic owner",
                    "text": text, "type": kind, "duration": duration,
                    "quoted": quoted, "triggerTurn": False}
+        if index < 3:
+            payload["idempotencyKey"] = "qa-replay-" + nonce + "-" + str(index)
         result = request_json(base, "/api/internal/chat-message", payload)
         message = result.get("message") if isinstance(result, dict) else None
         if (not isinstance(result, dict) or result.get("success") is not True or not isinstance(message, dict)
@@ -109,10 +112,14 @@ def seed(base: str, proof_path: Path) -> int:
                 or message.get("quoted") != quoted or message.get("type") != kind
                 or message.get("duration") != duration):
             raise ProbeFailure("Message acknowledgement does not match the fixture")
+        if index < 3:
+            if result.get("idempotency", {}).get("replayed") is not False:
+                raise ProbeFailure("First keyed fixture was not created as expected")
+            retry_requests.append({"request": payload, "message": message})
         expected[room].append(message)
         if first is None:
             first = message
-    proof = {"schemaVersion": 1, "fixtureCount": len(plan), "expectedRooms": expected,
+    proof = {"schemaVersion": 1, "fixtureCount": len(plan), "retryRequests": retry_requests, "expectedRooms": expected,
              "untouchedRooms": {room: content for room, content in chats.items() if room not in ROOMS}}
     validate_snapshot(proof, request_json(base, "/api/chats"))
     fd = os.open(proof_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -125,6 +132,15 @@ def verify(base: str, proof_path: Path) -> int:
     try:
         proof = json.loads(proof_path.read_text(encoding="utf-8"))
         validate_snapshot(proof, request_json(base, "/api/chats"))
+        retries = proof.get("retryRequests", [])
+        for entry in retries:
+            response = request_json(base, "/api/internal/chat-message", entry["request"])
+            if (response.get("success") is not True or response.get("idempotency", {}).get("replayed") is not True
+                    or response.get("message") != entry["message"]):
+                raise ProbeFailure("Keyed retry did not reconcile to the original message")
+        validate_snapshot(proof, request_json(base, "/api/chats"))
+        if retries:
+            print("CP16_MESSAGE_RETRY_REPLAY_PASS count=" + str(len(retries)))
         return int(proof["fixtureCount"])
     except (OSError, ValueError, KeyError, TypeError) as error:
         raise ProbeFailure("Cannot validate private chat persistence proof") from error

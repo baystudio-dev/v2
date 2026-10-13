@@ -99,6 +99,9 @@ Active CP16 branch: feature/v2-android-build-admission-20261008 (local)
 - [x] **CI 38394270851: 4/4 PASS**, desktop **67/67**, Android 36 x86_64 atomic writer/cold-restart chat persistence, production PRoot, four instrumentation tests. Evidence: checkpoints/CP16/ATOMIC_CHAT_STORAGE_20261013.md.
 - [ ] Real power-loss, physically full Android storage, and physical ARM64 runtime remain NOT TESTED. Windows/non-local FS, multi-process writers and whole-request transactions are not validated.
 
+- [x] Opt-in inert message retry receipts implemented in the same atomic snapshot: local baseline **84/84 PASS**, including real post-commit/pre-ack SIGKILL and retry proof. Evidence: checkpoints/CP16/MESSAGE_RETRY_RECEIPTS_20261013.md.
+- [ ] Android keyed replay after cold restart: PENDING fresh CI. No UI auto-retry, no triggered-agent idempotency or authenticated room guarantee; bounded 2048-receipt capacity has no automatic eviction.
+
 ## CP17 Personal release
 - ⬜ [ ] Personal APK, source ZIP, SBOM/licenses, no credentials and clean history.
 

@@ -111,6 +111,7 @@ for(const name of ['spawn','spawnSync','execFile','execFileSync','exec','execSyn
     const result = await runProbe(["verify", "--isolated-test", "--base-url", base, "--proof", proofPath]);
     assert.equal(result.code, 0, result.output);
     assert.match(result.output, /CP16_CHAT_PERSISTENCE_PASS count=5/);
+    assert.match(result.output, /CP16_MESSAGE_RETRY_REPLAY_PASS count=3/);
     const disk = JSON.parse(fs.readFileSync(persistedPath, "utf8"));
     for (const room of ["group", "direct_budi", "direct_rian"]) assert.deepEqual(disk.chats[room], proof.expectedRooms[room]);
     assert.deepEqual(disk.chats.custom_room, original.chats.custom_room);

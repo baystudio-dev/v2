@@ -3,6 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
+const { validateMessageReceipts } = require("./message-receipts");
 
 const MESSAGES = Object.freeze({
   CHAT_STORAGE_RECONCILIATION_REQUIRED: "Penyimpanan menunggu rekonsiliasi setelah kegagalan sinkronisasi. Muat ulang sebelum perubahan berikutnya.",
@@ -43,6 +44,7 @@ function validateChatRecord(data) {
   if (data.contextMemory !== undefined && (!object(data.contextMemory) || Object.values(data.contextMemory).some(x => typeof x !== "string"))) {
     throw new Error("Invalid memory");
   }
+  validateMessageReceipts(data.messageReceipts);
   return data;
 }
 
