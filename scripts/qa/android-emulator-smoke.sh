@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 LOG_PID=""
+PERSISTENCE_DIR=""
 diagnostics() {
   local rc="$?"
   trap - EXIT
@@ -14,6 +15,7 @@ diagnostics() {
     echo "CP16_RUNTIME_FAILURE=$rc"
     grep -Ein 'bossbayu|aiteam|AndroidRuntime|FATAL EXCEPTION|ANR in com.bossbayu|UnsatisfiedLinkError|dlopen failed|libnode|proot|Process.*died|Start proc' runtime-logcat.txt | tail -n 130 || true
   fi
+  if [ -n "$PERSISTENCE_DIR" ]; then rm -rf -- "$PERSISTENCE_DIR"; fi
   exit "$rc"
 }
 trap diagnostics EXIT
@@ -54,8 +56,25 @@ fi
 test -s runtime-status.json
 curl -fsS --max-time 5 http://127.0.0.1:33000/ >/dev/null
 echo "CP16_EMULATOR_RUNTIME_SMOKE_PASS"
+# Mutating fixture gate is restricted to an ephemeral GitHub CI emulator.
+# This never calls a provider and does not accept a physical-device target.
+persistence_enabled="${CP16_PERSISTENCE_TEST:-${CP16_PROOT_TEST:-0}}"
+if [ "$persistence_enabled" = 1 ]; then
+  if [ "${GITHUB_ACTIONS:-}" != true ]; then
+    echo "CP16_CHAT_PERSISTENCE_REQUIRES_ISOLATED_CI"
+    exit 60
+  fi
+  emulator_flag="$(adb shell getprop ro.kernel.qemu | tr -d '\r')"
+  if [ "$emulator_flag" != 1 ]; then
+    echo "CP16_CHAT_PERSISTENCE_REQUIRES_EMULATOR"
+    exit 60
+  fi
+  PERSISTENCE_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/cp16-chat-persistence.XXXXXX")"
+  python3 scripts/qa/chat-persistence-probe.py seed --isolated-test \
+    --base-url http://127.0.0.1:33000 --proof "$PERSISTENCE_DIR/expected.json"
+fi
 # Repeated launch must re-create the dedicated :engine process and backend.
-# This is a read-only recovery gate: no chat messages, credentials or files are modified.
+# Recovery itself does not modify chat; the optional CI-only fixture above is verified after restart.
 echo "CP16_RESTART_BEGIN=$(date -u +%FT%TZ)"
 first_ui_pid="$(adb shell pidof com.bossbayu.aiteam 2>/dev/null || true)"
 first_engine_pid="$(adb shell pidof com.bossbayu.aiteam:engine 2>/dev/null || true)"
@@ -129,6 +148,11 @@ assert team.get("chatAgentExecution") == "not-enabled", "do not simulate enabled
 print("CP16_RESTART_JSON_CONTRACT_PASS")
 PY
 echo "CP16_RESTART_RUNTIME_SMOKE_PASS"
+if [ "$persistence_enabled" = 1 ]; then
+  python3 scripts/qa/chat-persistence-probe.py verify --isolated-test \
+    --base-url http://127.0.0.1:33000 --proof "$PERSISTENCE_DIR/expected.json"
+  echo "CP16_ANDROID_CHAT_PERSISTENCE_PASS"
+fi
 # CP16 non-mutating API surface: no model calls, credentials, or chat writes.
 curl -fsS --max-time 5 http://127.0.0.1:33000/api/chats >runtime-chats.json
 curl -fsS --max-time 5 http://127.0.0.1:33000/api/workstation/status >runtime-workstation.json

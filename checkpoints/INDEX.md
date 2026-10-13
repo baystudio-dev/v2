@@ -13,3 +13,5 @@ Start here: [Master Blueprint](../docs/BLUEPRINT_MASTER_V2.md), [Living Checkpoi
 | CP21–CP24 | [Tracker](../docs/CHECKPOINT_TRACKER.md) | ⬜ Not implemented |
 
 **Rule:** A checkpoint's partial subtasks can carry ✅, but full CP acceptance requires device/API evidence and all relevant tests.
+
+CP16 follow-up: [Synthetic chat persistence gate](CP16/CHAT_PERSISTENCE_GATE_20261013.md), desktop hard-restart proof with Android CI pending.

@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node server.js",
     "doctor": "bash scripts/doctor.sh",
-    "test": "bash scripts/smoke-test.sh",
+    "test": "bash scripts/smoke-test.sh && npm run qa:baseline",
     "test:contracts": "node --test scripts/qa/*.test.js",
     "qa:baseline": "node --check server.js && node --check cli.js && npm run test:contracts"
   },

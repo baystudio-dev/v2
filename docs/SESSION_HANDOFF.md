@@ -197,3 +197,11 @@
 - App cold start/restart Node HTTP and read-only API guards PASS. QA-only clean PRoot candidate --help exited 0, fixed Alpine BusyBox guest command emitted CP16_PROOT_EXEC_PASS and final CP16_PROOT_READONLY_SMOKE_PASS as the app UID.
 - This is the first VERIFIED native x86_64 guest-command gate; production binary remains unchanged. Physical ARM64, actual terminal/PTY, real agents and chat persistence unverified.
 - See checkpoints/CP16/PROOT_QA_PASS_38004055930.md and draft PR #1. No main/UI changes. Do not auto-promote QA sidecar or merge the PR.
+
+## CP16 chat persistence gate, isolated continuation (2026-10-13)
+- Latest baseline verified from GitHub: `6db00b1`, including production PRoot and four terminal lifecycle instrumentation tests. Do not return to the earlier PRoot candidate-only baseline.
+- Worktree `/home/sprite/v2-chat-persistence-20261013` on `qa/cp16-chat-persistence-20261013`; existing uncommitted PTY/CMake changes in the original publication worktree were not modified or included.
+- Shared fixture probe sends five synthetic messages with triggerTurn=false, checks exact payloads after restart, keeps private proof out of artifacts and cleans it on EXIT. Android mutation is CI/emulator-only.
+- Real desktop process SIGKILL/restart x3 PASS. Negative controls reject lost/duplicated/moved/modified histories. Fresh emulator persistence evidence is PENDING.
+- `npm test` now includes `qa:baseline`, ensuring the existing desktop CI job actually runs all contract/integration tests.
+- Report: checkpoints/CP16/CHAT_PERSISTENCE_GATE_20261013.md. No production server/UI/native change; power-loss/partial-write durability, live agents, PTY and physical ARM64 remain unverified.

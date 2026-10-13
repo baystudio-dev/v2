@@ -91,6 +91,9 @@ Active CP16 branch: feature/v2-android-build-admission-20261008 (local)
 - ⬜ [ ] Extended lifecycle endurance and physical ARM64 interactive chat/terminal/agent verification (**NOT TESTED**).
 - ⬜ [ ] ARM64 physical device installs and runs chat/runtime tests (**NOT TESTED**).
 
+- [x] Synthetic chat persistence gate implemented: real desktop backend survives three SIGKILL restarts; five exact messages, quoted/voice-note metadata, unrelated room and context checks. Evidence: checkpoints/CP16/CHAT_PERSISTENCE_GATE_20261013.md.
+- [ ] Android emulator persistence after force-stop: PENDING fresh CI. Physical ARM64 remains NOT TESTED.
+
 ## CP17 Personal release
 - ⬜ [ ] Personal APK, source ZIP, SBOM/licenses, no credentials and clean history.
 
