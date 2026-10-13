@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+LOG_PID=""
+PERSISTENCE_DIR=""
+diagnostics() {
+  local rc="$?"
+  trap - EXIT
+  adb shell pidof com.bossbayu.aiteam || true
+  adb shell pidof com.bossbayu.aiteam:engine || true
+  adb shell dumpsys activity activities >runtime-activities.txt 2>&1 || true
+  adb shell dumpsys activity services com.bossbayu.aiteam >runtime-services.txt 2>&1 || true
+  adb shell dumpsys package com.bossbayu.aiteam >runtime-package.txt 2>&1 || true
+  if [ -n "$LOG_PID" ]; then kill "$LOG_PID" 2>/dev/null || true; wait "$LOG_PID" 2>/dev/null || true; fi
+  if [ "$rc" -ne 0 ]; then
+    echo "CP16_RUNTIME_FAILURE=$rc"
+    grep -Ein 'bossbayu|aiteam|AndroidRuntime|FATAL EXCEPTION|ANR in com.bossbayu|UnsatisfiedLinkError|dlopen failed|libnode|proot|Process.*died|Start proc' runtime-logcat.txt | tail -n 130 || true
+  fi
+  if [ -n "$PERSISTENCE_DIR" ]; then rm -rf -- "$PERSISTENCE_DIR"; fi
+  exit "$rc"
+}
+trap diagnostics EXIT
+APK="$(find runtime-apk -type f -name '*.apk' -print -quit)"
+test -n "$APK" && test -s "$APK" || { echo "APK missing"; exit 20; }
+echo "INSTALL_START=$(date -u +%FT%TZ)"
+adb install -r "$APK"
+adb shell pm grant com.bossbayu.aiteam android.permission.POST_NOTIFICATIONS || true
+adb logcat -c
+adb logcat -v threadtime >runtime-logcat.txt 2>&1 &
+LOG_PID="$!"
+echo "APP_LAUNCH_START=$(date -u +%FT%TZ)"
+adb shell am force-stop com.bossbayu.aiteam || true
+# am start -W may itself time out on software-only x86 emulation.
+adb shell am start -n com.bossbayu.aiteam/.MainActivity || true
+adb forward tcp:33000 tcp:3000
+attempts="$(printenv SMOKE_ATTEMPTS || echo 90)"
+wait_seconds="$(printenv SMOKE_WAIT_SECONDS || echo 2)"
+if ! [[ "$attempts" =~ ^[1-9][0-9]*$ ]] || ((attempts > 180)); then echo "Invalid SMOKE_ATTEMPTS" >&2; exit 21; fi
+ready=0
+for ((i=1;i<=attempts;i++)); do
+  if curl -fsS --max-time 3 http://127.0.0.1:33000/api/status >runtime-status.json 2>/dev/null; then
+    ready=1
+    echo "CP16_HEALTHY_ATTEMPT=$i"
+    break
+  fi
+  if ((i % 10 == 0)); then
+    echo "CP16_WAIT_ATTEMPT=$i $(date -u +%FT%TZ)"
+    adb shell pidof com.bossbayu.aiteam || true
+    adb shell pidof com.bossbayu.aiteam:engine || true
+  fi
+  sleep "$wait_seconds"
+done
+if [ "$ready" -ne 1 ]; then
+  echo "CP16_BACKEND_UNAVAILABLE"
+  exit 22
+fi
+test -s runtime-status.json
+curl -fsS --max-time 5 http://127.0.0.1:33000/ >/dev/null
+echo "CP16_EMULATOR_RUNTIME_SMOKE_PASS"
+# Mutating fixture gate is restricted to an ephemeral GitHub CI emulator.
+# This never calls a provider and does not accept a physical-device target.
+persistence_enabled="${CP16_PERSISTENCE_TEST:-${CP16_PROOT_TEST:-0}}"
+if [ "$persistence_enabled" = 1 ]; then
+  if [ "${GITHUB_ACTIONS:-}" != true ]; then
+    echo "CP16_CHAT_PERSISTENCE_REQUIRES_ISOLATED_CI"
+    exit 60
+  fi
+  emulator_flag="$(adb shell getprop ro.kernel.qemu | tr -d '\r')"
+  if [ "$emulator_flag" != 1 ]; then
+    echo "CP16_CHAT_PERSISTENCE_REQUIRES_EMULATOR"
+    exit 60
+  fi
+  python3 scripts/qa/loopback-http-probe.py --isolated-test --base-url http://127.0.0.1:33000
+  PERSISTENCE_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/cp16-chat-persistence.XXXXXX")"
+  python3 scripts/qa/chat-persistence-probe.py seed --isolated-test \
+    --base-url http://127.0.0.1:33000 --proof "$PERSISTENCE_DIR/expected.json"
+fi
+# Repeated launch must re-create the dedicated :engine process and backend.
+# Recovery itself does not modify chat; the optional CI-only fixture above is verified after restart.
+echo "CP16_RESTART_BEGIN=$(date -u +%FT%TZ)"
+first_ui_pid="$(adb shell pidof com.bossbayu.aiteam 2>/dev/null || true)"
+first_engine_pid="$(adb shell pidof com.bossbayu.aiteam:engine 2>/dev/null || true)"
+if [ -z "$first_ui_pid" ] || [ -z "$first_engine_pid" ]; then
+  echo "CP16_INITIAL_PROCESSES_MISSING"
+  exit 24
+fi
+echo "CP16_INITIAL_UI_PID=$first_ui_pid"
+echo "CP16_INITIAL_ENGINE_PID=$first_engine_pid"
+adb shell am force-stop com.bossbayu.aiteam
+# Android 36 may still hold the top task record briefly after force-stop.
+# Do not deliver the relaunch intent to that dead top Activity.
+stopped=0
+for ((i=1;i<=20;i++)); do
+  old_ui="$(adb shell pidof com.bossbayu.aiteam 2>/dev/null || true)"
+  old_engine="$(adb shell pidof com.bossbayu.aiteam:engine 2>/dev/null || true)"
+  if [ -z "$old_ui" ] && [ -z "$old_engine" ]; then
+    stopped=1
+    break
+  fi
+  sleep 0.5
+done
+if [ "$stopped" -ne 1 ]; then
+  echo "CP16_RESTART_OLD_PROCESSES_STILL_RUNNING"
+  exit 25
+fi
+# Release Android's transition/task state, then force fresh task creation.
+sleep 1
+launch_output="$(adb shell am start -S -f 0x10008000 -n com.bossbayu.aiteam/.MainActivity 2>&1)" || {
+  echo "CP16_RESTART_ACTIVITY_LAUNCH_FAILED: $launch_output"
+  exit 26
+}
+echo "$launch_output"
+if [[ "$launch_output" == *"Warning: Activity not started"* ]]; then
+  echo "CP16_RESTART_STALE_TASK_INTENT"
+  exit 26
+fi
+restarted=0
+for ((i=1;i<=attempts;i++)); do
+  if curl -fsS --max-time 3 http://127.0.0.1:33000/api/status >runtime-restart-status.json 2>/dev/null; then
+    new_ui_pid="$(adb shell pidof com.bossbayu.aiteam 2>/dev/null || true)"
+    new_engine_pid="$(adb shell pidof com.bossbayu.aiteam:engine 2>/dev/null || true)"
+    if [ -n "$new_ui_pid" ] && [ -n "$new_engine_pid" ] &&
+       [ "$new_ui_pid" != "$first_ui_pid" ] && [ "$new_engine_pid" != "$first_engine_pid" ]; then
+      restarted=1
+      echo "CP16_RESTART_NEW_UI_PID=$new_ui_pid"
+      echo "CP16_RESTART_NEW_ENGINE_PID=$new_engine_pid"
+      echo "CP16_RESTART_HEALTHY_ATTEMPT=$i"
+      break
+    fi
+  fi
+  sleep "$wait_seconds"
+done
+if [ "$restarted" -ne 1 ]; then
+  echo "CP16_RESTART_BACKEND_UNAVAILABLE"
+  exit 23
+fi
+test -s runtime-restart-status.json
+curl -fsS --max-time 5 http://127.0.0.1:33000/api/team >runtime-team.json
+python3 - <<'PY'
+import json
+from pathlib import Path
+first=json.loads(Path("runtime-status.json").read_text())
+second=json.loads(Path("runtime-restart-status.json").read_text())
+team=json.loads(Path("runtime-team.json").read_text())
+assert isinstance(first,dict) and isinstance(second,dict), "status must be JSON objects"
+assert "availableModels" in first and "availableModels" in second, "invalid backend status"
+assert isinstance(team.get("members"),list), "team members missing"
+assert {m.get("id") for m in team["members"]} >= {"owner","zovia","budi","rian"}, "team registry incomplete"
+assert team.get("chatAgentExecution") == "not-enabled", "do not simulate enabled agents"
+print("CP16_RESTART_JSON_CONTRACT_PASS")
+PY
+echo "CP16_RESTART_RUNTIME_SMOKE_PASS"
+if [ "$persistence_enabled" = 1 ]; then
+  python3 scripts/qa/chat-persistence-probe.py verify --isolated-test \
+    --base-url http://127.0.0.1:33000 --proof "$PERSISTENCE_DIR/expected.json"
+  echo "CP16_ANDROID_CHAT_PERSISTENCE_PASS"
+fi
+# CP16 non-mutating API surface: no model calls, credentials, or chat writes.
+curl -fsS --max-time 5 http://127.0.0.1:33000/api/chats >runtime-chats.json
+curl -fsS --max-time 5 http://127.0.0.1:33000/api/workstation/status >runtime-workstation.json
+terminal_status="$(curl -sS --max-time 5 -X POST -H 'Content-Type: application/json' -d '{}' -o runtime-terminal-denied.json -w '%{http_code}' http://127.0.0.1:33000/api/terminal/exec)"
+if [ "$terminal_status" != "409" ]; then
+  echo "CP16_UNSAFE_HTTP_TERMINAL_STATUS=$terminal_status"
+  exit 27
+fi
+python3 - <<'PY'
+import json
+from pathlib import Path
+chats=json.loads(Path("runtime-chats.json").read_text())
+assert isinstance(chats.get("chats"),dict), "chat object missing"
+for room in ("group","direct_budi","direct_rian"):
+    assert isinstance(chats["chats"].get(room),list), f"legacy room missing: {room}"
+workstation=json.loads(Path("runtime-workstation.json").read_text())
+assert workstation.get("active") in ("alpine","ubuntu"), "active workstation invalid"
+assert workstation.get("storage",{}).get("workspaces",{}).get("budi"), "Budi workspace missing"
+assert workstation.get("storage",{}).get("workspaces",{}).get("rian"), "Rian workspace missing"
+deny=json.loads(Path("runtime-terminal-denied.json").read_text())
+assert "dinonaktifkan" in deny.get("error",""), "raw terminal endpoint not blocked"
+print("CP16_READONLY_CHAT_WORKSTATION_AND_HTTP_TERMINAL_GUARD_PASS")
+PY
+echo "CP16_READONLY_API_SMOKE_PASS"
+
+# PRoot probe uses only the Android debug app UID and an immutable command.
+# No HTTP code execution or production chat modifications.
+if [ "${CP16_PROOT_TEST:-0}" = 1 ]; then
+  bash scripts/qa/android-proot-smoke.sh
+fi
+
+# CP18 integration gate runs on the *existing* emulator job. The GitHub
+# workflow is intentionally unchanged because OAuth lacks workflow scope.
+# Build app + test APK together so their debug signing certificates match.
+# This only runs in the isolated CI environment, after CP16/17 smoke passed.
+if [ "${CP18_INSTRUMENTATION_TEST:-${CP16_PROOT_TEST:-0}}" = 1 ]; then
+  echo CP18_INSTRUMENTATION_BUILD_START
+  set +e
+  (
+    cd android
+    timeout 480s ./gradlew --no-daemon --console=plain -PruntimeAbi=x86_64 assembleDebug assembleDebugAndroidTest
+  ) >runtime-instrumentation-build.txt 2>&1
+  build_exit=$?
+  set -e
+  if [ "$build_exit" -ne 0 ]; then
+    echo "CP18_INSTRUMENTATION_BUILD_FAILED=$build_exit"
+    tail -n 100 runtime-instrumentation-build.txt
+    exit 50
+  fi
+  app_test_apk="android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+  app_under_test="android/app/build/outputs/apk/debug/app-debug.apk"
+  if [ ! -s "$app_under_test" ] || [ ! -s "$app_test_apk" ]; then
+    echo CP18_INSTRUMENTATION_APK_MISSING
+    exit 51
+  fi
+  echo CP18_INSTRUMENTATION_BUILD_PASS
+  # CI emulator only: its already-tested debug APK and ephemeral test state
+  # are replaced together with a matching signing certificate.
+  adb uninstall com.bossbayu.aiteam >/dev/null || true
+  adb install "$app_under_test"
+  adb install "$app_test_apk"
+  set +e
+  timeout 120s adb shell am instrument -w -r \
+    -e class com.bossbayu.aiteam.runtime.PRootRuntimeInstrumentedTest \
+    com.bossbayu.aiteam.test/androidx.test.runner.AndroidJUnitRunner >runtime-instrumentation.txt 2>&1
+  instrument_exit=$?
+  set -e
+  cat runtime-instrumentation.txt
+  if [ "$instrument_exit" -ne 0 ] || ! grep -q '^OK (4 tests)$' runtime-instrumentation.txt; then
+    echo "CP18_INSTRUMENTATION_FAILURE=$instrument_exit"
+    exit 52
+  fi
+  echo CP18_PROOT_MANAGER_AND_TERMINAL_INSTRUMENTATION_PASS
+fi
