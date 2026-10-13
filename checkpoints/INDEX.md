@@ -18,4 +18,4 @@ CP16 follow-up: [Synthetic chat persistence gate](CP16/CHAT_PERSISTENCE_GATE_202
 
 CP16: [Atomic snapshot storage and fault handling](CP16/ATOMIC_CHAT_STORAGE_20261013.md), 67 local/desktop CI tests passed; Android runtime and all four CI jobs PASS (38394270851).
 
-CP16 follow-up: [Opt-in message retry receipts](CP16/MESSAGE_RETRY_RECEIPTS_20261013.md), desktop post-commit/pre-ack crash proof and Android replay pending.
+CP16 follow-up: [Opt-in message retry receipts](CP16/MESSAGE_RETRY_RECEIPTS_20261013.md), desktop post-commit/pre-ack crash proof and Android replay PASS (CI 38399249491).

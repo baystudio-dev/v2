@@ -45,7 +45,7 @@ Example body:
 - One of those tests sends a real request then **SIGKILLs the disposable Node process after directory fsync but before its HTTP acknowledgement**. Restart and retry return the original ID with one persisted message, one receipt and one commit. This is actual process termination; syscall faults remain test-only injected adapters.
 - The shared Android/desktop persistence probe now uses three keyed messages and two legacy unkeyed messages. After the existing new-PID restart gate it retries the three keyed requests, compares exact original message objects and verifies the full room histories remain unchanged.
 - Required new Android marker: `CP16_MESSAGE_RETRY_REPLAY_PASS count=3`.
-- Android emulator outcome: **PENDING fresh CI**. Do not infer it from local/desktop tests.
+- Android emulator outcome: **PASS in CI 38399249491** on the exact source below. This is based on the actual replay marker, not inferred from desktop tests.
 
 ## Preserved limits
 No live agents, authenticated room privacy, attachment transactions, E2EE, power-cut/flash durability, multiprocess writers, PTY/IME or physical ARM64 runtime were validated. The new protocol does not auto-retry any mutation, and it does not claim exactly-once side effects beyond this keyed inert append path. PR remains draft; main stays unchanged.
@@ -59,3 +59,17 @@ These inform the design; the repository tests and actual CI markers remain the r
 - CI 38398293447 desktop job executed all 17 new retry tests successfully, but the older native dependency test failed with `spawnSync nm ETIMEDOUT` at its 4000 ms deadline. The desktop result was **83/84**, not a green full pipeline.
 - Increased only the native inspection subprocess deadline to 15000 ms. All pinned hashes, dependency, symbol and LOAD-alignment assertions remain mandatory. No binary changed, no failed test skipped, and this is not a claim of a 15-second runtime performance target.
 - The full corrected revision needs a fresh CI result before being declared verified.
+
+## Verified corrected CI result
+- **CI 38399249491 PASS, all four jobs.** https://github.com/bayurohmat608-create/v2/actions/runs/38399249491
+- Verified application/test source: `0e9bcc5040f8260bd7021327d5dcdd0953ff71fb`.
+- Desktop CI: **84/84 PASS**, including every old test, all 17 new receipt/retry tests, the real post-commit/pre-ack SIGKILL test, and the native ELF checks that timed out in the earlier attempt.
+- Android API 36 x86_64: `CP16_MESSAGE_RETRY_REPLAY_PASS count=3`, `CP16_CHAT_PERSISTENCE_PASS count=5` and `CP16_ANDROID_CHAT_PERSISTENCE_PASS`. Three keyed requests were repeated after app/engine restart and returned their original message objects; the full five-message histories stayed unchanged.
+- Production PRoot remains green: `CP17_PROOT_PRODUCTION_READONLY_SMOKE_PASS`.
+- Existing terminal/PRoot instrumentation remains green: `OK (4 tests)` and `CP18_PROOT_MANAGER_AND_TERMINAL_INSTRUMENTATION_PASS`.
+- Android ARM64 and x86_64 builds/lint/ZIP alignment passed. This does **not** establish runtime correctness on physical ARM64.
+- Raw verification logs retained under `/home/sprite/v2-message-retry-evidence-38399249491`; no transcript artifact was added to GitHub uploads.
+- Original PTY/CMake work was re-fingerprinted: all 37 dirty/untracked files and Git status remained byte-identical. The new worktree is separate.
+
+## Next integration boundary
+No existing UI sender has been changed to persist and reuse an idempotency key. The tested opt-in endpoint handles inert owner chat appends only; `/api/message`, triggered model/tool work, and other mutating APIs do not acquire this guarantee. The 2048-receipt no-eviction cap, safe retention/migration and real authenticated client integration need separate design and tests before general deployment. No blind auto-retry has been introduced.

@@ -100,7 +100,8 @@ Active CP16 branch: feature/v2-android-build-admission-20261008 (local)
 - [ ] Real power-loss, physically full Android storage, and physical ARM64 runtime remain NOT TESTED. Windows/non-local FS, multi-process writers and whole-request transactions are not validated.
 
 - [x] Opt-in inert message retry receipts implemented in the same atomic snapshot: local baseline **84/84 PASS**, including real post-commit/pre-ack SIGKILL and retry proof. Evidence: checkpoints/CP16/MESSAGE_RETRY_RECEIPTS_20261013.md.
-- [ ] Android keyed replay after cold restart: PENDING fresh CI. No UI auto-retry, no triggered-agent idempotency or authenticated room guarantee; bounded 2048-receipt capacity has no automatic eviction.
+- [x] **CI 38399249491 PASS**: desktop 84/84 and Android 36 keyed replay count=3 after restart; original five messages, production PRoot and four terminal tests preserved. Evidence: checkpoints/CP16/MESSAGE_RETRY_RECEIPTS_20261013.md.
+- [ ] UI persisted keys, triggered-agent idempotency, auth and safe receipt retention/migration remain unimplemented; bounded 2048-receipt capacity has no automatic eviction.
 
 ## CP17 Personal release
 - ⬜ [ ] Personal APK, source ZIP, SBOM/licenses, no credentials and clean history.
@@ -161,4 +162,6 @@ Active CP16 branch: feature/v2-android-build-admission-20261008 (local)
 - ✅ [x] **CP16 QA-only native PRoot x86_64 emulator PASS:** Android 36 run 38004055930 executed a fixed Alpine BusyBox guest command under app UID using clean candidate ELF and talloc; all four CI jobs passed. Evidence: checkpoints/CP16/PROOT_QA_PASS_38004055930.md.
 - ⬜ [ ] **CP16 production PRoot and physical ARM64:** NOT VERIFIED. Existing production ELF/loader unchanged, PTY/agent workflows and 16 KiB physical runtime untested. PR #1 remains draft.
 
-- [ ] CI 38398293447: older ELF inspection hit a 4000 ms nm timeout (desktop 83/84); retry tests passed. Bounded tool deadline increased to 15000 ms without removing any native validation. Await corrected full CI.
+- [x] Resolved CI 38398293447 native-tool timeout: the corrected revision passed all 84 tests and all four jobs in CI 38399249491; every hash/symbol/alignment assertion retained.
+
+- [x] Corrected full CI 38399249491 retained every ELF hash/dependency/symbol/alignment check; bounded 15000 ms tool deadline resolved the shared-runner timeout.

@@ -4,7 +4,7 @@
 - Based on `54a0482`, isolated worktree `/home/sprite/v2-message-retry-20261013`, local branch `qa/cp16-message-retry-20261013`. Original 37-file PTY/CMake WIP fingerprint preserved.
 - `agent/message-receipts.js` adds bounded persistent idempotency for explicitly keyed user messages with triggerTurn=false in the three legacy rooms. No UI/agent wiring changed.
 - Message and receipt share one atomic save/rollback boundary. Same-payload retries return the existing message without saving or broadcasting. Conflicts, edited/deleted messages, invalid ledgers and capacity fail explicitly.
-- Local **84/84 PASS**, including real SIGKILL after commit but before HTTP response. Android's shared probe retries three keys after restart; fresh CI is PENDING.
+- **CI 38399249491 PASS**, source `0e9bcc5040f8260bd7021327d5dcdd0953ff71fb`: all four jobs; desktop 84/84; Android keyed replay count=3 with five messages preserved, production PRoot and four instrumentation tests green. Actual post-commit/pre-ack SIGKILL is covered by desktop integration tests.
 - Report: `checkpoints/CP16/MESSAGE_RETRY_RECEIPTS_20261013.md`.
 - Receipt capacity 2048 with no silent eviction; auth, agent/tool execution, multiprocess writes, retention/migration, physical ARM64 and PTY remain separate gates. PR stays draft.
 
