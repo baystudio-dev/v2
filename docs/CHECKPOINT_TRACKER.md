@@ -96,7 +96,8 @@ Active CP16 branch: feature/v2-android-build-admission-20261008 (local)
 - [ ] Interrupted-write, full-disk and power-loss durability not verified. Physical ARM64 remains NOT TESTED.
 
 - [x] Atomic chat snapshot implementation and explicit pre/post-commit storage errors: **67/67 local tests PASS**, including real SIGKILL at four write boundaries and disposable HTTP syscall-fault tests. Evidence: checkpoints/CP16/ATOMIC_CHAT_STORAGE_20261013.md.
-- [ ] Fresh Android CI for atomic writer PENDING. Physical full-disk/power-loss and ARM64 runtime NOT TESTED.
+- [x] **CI 38394270851: 4/4 PASS**, desktop **67/67**, Android 36 x86_64 atomic writer/cold-restart chat persistence, production PRoot, four instrumentation tests. Evidence: checkpoints/CP16/ATOMIC_CHAT_STORAGE_20261013.md.
+- [ ] Real power-loss, physically full Android storage, and physical ARM64 runtime remain NOT TESTED. Windows/non-local FS, multi-process writers and whole-request transactions are not validated.
 
 ## CP17 Personal release
 - ⬜ [ ] Personal APK, source ZIP, SBOM/licenses, no credentials and clean history.

@@ -4,7 +4,7 @@
 - Based on `bec0972`, isolated worktree `/home/sprite/v2-atomic-chat-20261013` on `qa/cp16-atomic-chat-20261013`. Preserve original PTY/CMake work; no native/UI edits in this checkpoint.
 - New `agent/atomic-chat-store.js`: sibling 0600 temp, full write, fsync file, close, rename, fsync directory. Pre-rename failures roll persisted RAM back; post-rename sync uncertainty is reported and blocks blind retries.
 - Corrupt startup history stays untouched/read-only. HTTP storage errors are typed/redacted, not success or generic malformed-request errors.
-- Local baseline **67/67 PASS**. Fresh Android CI pending; no claim of physical power-loss or full-disk validation.
+- **Green CI 38394270851**, source `cb1f84e3a09db8e28c219a11cd7d11b157aa640e`: 4/4 jobs, desktop 67/67, Android atomic-write/restart chat persistence, production PRoot and four terminal tests PASS. Power loss and actual full Android storage still untested.
 - Report: `checkpoints/CP16/ATOMIC_CHAT_STORAGE_20261013.md`.
 
 
