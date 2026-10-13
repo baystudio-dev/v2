@@ -244,3 +244,9 @@
 - CI 38398293447 desktop job executed all 17 new retry tests successfully, but the older native dependency test failed with `spawnSync nm ETIMEDOUT` at its 4000 ms deadline. The desktop result was **83/84**, not a green full pipeline.
 - Increased only the native inspection subprocess deadline to 15000 ms. All pinned hashes, dependency, symbol and LOAD-alignment assertions remain mandatory. No binary changed, no failed test skipped, and this is not a claim of a 15-second runtime performance target.
 - The full corrected revision needs a fresh CI result before being declared verified.
+
+## First Android run: history versus telemetry assertion
+- CI 38405598188: desktop 110/110 and both Android builds passed. Android reached the end of all 13 expected rejection checks, but the probe failed with `Rejected request changed history` before persistence/restart.
+- The probe was incorrectly comparing the entire `/api/chats` response envelope. Source `getPublicStatus()` includes `wakelock.uptimeSec` and `heartbeatAt`, which can change even when every chat message is unchanged. The first-run log does not include payload snapshots, so it cannot identify the exact differing field.
+- The corrected assertion compares every room and complete message object in `chats`, while excluding only sibling status telemetry. Four negative/positive controls prove that telemetry ticks are allowed but changed messages, added/deleted/moved rooms or malformed history still fail.
+- No server request-policy checks were relaxed. A corrected full CI run is required before signoff.

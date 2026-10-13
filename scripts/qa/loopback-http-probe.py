@@ -52,14 +52,30 @@ def request(base: str, route: str, method: str = "GET", headers: dict | None = N
         raise BoundaryFailure("Cannot complete local HTTP boundary check") from error
 
 
+def history(snapshot):
+    if (not isinstance(snapshot, dict) or not isinstance(snapshot.get("chats"), dict)
+            or any(not isinstance(messages, list) for messages in snapshot["chats"].values())):
+        raise BoundaryFailure("History response shape invalid")
+    return snapshot["chats"]
+
+
+def assert_history_unchanged(expected, snapshot):
+    # /api/chats also includes status.wakelock.uptimeSec and heartbeatAt.
+    # Those are live telemetry, not chat history. Compare EVERY room/message.
+    if history(snapshot) != expected:
+        raise BoundaryFailure("Rejected request changed history")
+
+
 def verify(base: str) -> int:
     status, headers, before = request(base, "/api/chats")
     if status != 200 or not isinstance(before, dict) or not isinstance(before.get("chats"), dict):
         raise BoundaryFailure("Baseline history unavailable")
+    expected_history = history(before)
     own_headers = {"Origin": base, "Referer": base + "/", "Sec-Fetch-Site": "same-origin"}
     status, headers, same = request(base, "/api/chats", headers=own_headers)
-    if status != 200 or same != before or headers.get("Access-Control-Allow-Origin") != base:
+    if status != 200 or headers.get("Access-Control-Allow-Origin") != base:
         raise BoundaryFailure("Same-origin client lost access")
+    assert_history_unchanged(expected_history, same)
     if headers.get("X-Content-Type-Options") != "nosniff" or headers.get("Cache-Control") != "no-store":
         raise BoundaryFailure("Sensitive response headers missing")
     fixture = {"text": "Synthetic boundary fixture must remain absent", "sender": "user", "chatId": "group", "triggerTurn": False}
@@ -91,8 +107,9 @@ def verify(base: str) -> int:
     if status != 204 or headers.get("Access-Control-Allow-Origin") != base:
         raise BoundaryFailure("Same-origin JSON preflight rejected")
     status, _, after = request(base, "/api/chats")
-    if status != 200 or after != before:
-        raise BoundaryFailure("Rejected request changed history")
+    if status != 200:
+        raise BoundaryFailure("History no longer readable")
+    assert_history_unchanged(expected_history, after)
     return len(cases)
 
 

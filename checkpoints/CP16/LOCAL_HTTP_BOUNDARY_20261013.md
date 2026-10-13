@@ -33,7 +33,7 @@ Native/CLI requests without Origin/Referer/Fetch Metadata remain accepted from l
 External browser links/iframes and remote LAN/proxy hosting are not allowed by this strict local-workstation policy. Unknown or unusual embedded-browser provenance can now be rejected. No claim of universal CSRF protection or fully secure agent runtime is made.
 
 ## Verification before publication
-- **110/110 local baseline tests PASS**, comprising all prior 84 tests and 26 new unit/live HTTP/CI-wiring tests.
+- **111/111 local baseline tests PASS**, comprising all prior 84 tests and 27 new unit/live HTTP/CI-wiring tests.
 - Real backend tests prove rejection before chat mutation or message SSE, retained exact keyed replay behavior, no provider process invocation, raw duplicate-header handling, strict source checks, preflight outcomes, ADB-forwarded port compatibility and byte-identical web asset serving.
 - Shared `scripts/qa/loopback-http-probe.py` exercises **13 hostile contexts** over actual loopback HTTP. It checks stable refusal statuses, absence of CORS permission, unchanged full chat snapshots, plus native and same-origin positive controls. No transcripts are saved as artifacts.
 - The probe runs only inside the existing explicit GitHub/emulator gate, before persistence fixtures. Existing five-message persistence and three-key replay probes now send same-origin browser-shaped headers, so accepted writes are verified as well.
@@ -44,3 +44,9 @@ External browser links/iframes and remote LAN/proxy hosting are not allowed by t
 - Fetch Standard and browser-controlled request headers: https://fetch.spec.whatwg.org/
 - Node HTTP rawHeaders and duplicate-header behavior: https://nodejs.org/api/http.html#messagerawheaders
 The project-specific policy and measured results above are evidenced by the source/tests and subsequent CI log, not asserted by those external references.
+
+## First Android run: history versus telemetry assertion
+- CI 38405598188: desktop 110/110 and both Android builds passed. Android reached the end of all 13 expected rejection checks, but the probe failed with `Rejected request changed history` before persistence/restart.
+- The probe was incorrectly comparing the entire `/api/chats` response envelope. Source `getPublicStatus()` includes `wakelock.uptimeSec` and `heartbeatAt`, which can change even when every chat message is unchanged. The first-run log does not include payload snapshots, so it cannot identify the exact differing field.
+- The corrected assertion compares every room and complete message object in `chats`, while excluding only sibling status telemetry. Four negative/positive controls prove that telemetry ticks are allowed but changed messages, added/deleted/moved rooms or malformed history still fail.
+- No server request-policy checks were relaxed. A corrected full CI run is required before signoff.

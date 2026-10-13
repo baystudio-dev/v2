@@ -168,3 +168,5 @@ Active CP16 branch: feature/v2-android-build-admission-20261008 (local)
 - [x] Resolved CI 38398293447 native-tool timeout: the corrected revision passed all 84 tests and all four jobs in CI 38399249491; every hash/symbol/alignment assertion retained.
 
 - [x] Corrected full CI 38399249491 retained every ELF hash/dependency/symbol/alignment check; bounded 15000 ms tool deadline resolved the shared-runner timeout.
+
+- [ ] CI 38405598188 reached all 13 HTTP rejection checks; probe incorrectly compared live status telemetry with history. Corrected full-chat-only equality plus four negative controls added; no HTTP policy relaxation. Await corrected CI.

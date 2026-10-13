@@ -193,3 +193,14 @@ test("CP16 boundary probe cannot be activated outside the existing explicit emul
   assert.ok(implementation.indexOf("const url = enforceLoopbackRequest(req, res)") < implementation.indexOf('url.pathname === "/api/internal/chat-message"'));
   assert.doesNotMatch(implementation, /http:\$\{host\}|const allowed = new Set/);
 });
+
+
+test("CP16 Android history assertion excludes only live telemetry, never changed messages or rooms", { timeout: 5000 }, async () => {
+  const child = spawn("python3", ["-m", "unittest", "discover", "-s", __dirname, "-p", "loopback_http_probe_test.py"], {
+    stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, PYTHONDONTWRITEBYTECODE: "1" }
+  });
+  let output = "";
+  for (const stream of [child.stdout, child.stderr]) stream.on("data", b => { output += b; });
+  const [code] = await once(child, "exit");
+  assert.equal(code, 0, output); assert.match(output, /Ran 4 tests/); assert.match(output, /OK/);
+});
