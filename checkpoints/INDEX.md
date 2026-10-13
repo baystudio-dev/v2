@@ -20,4 +20,4 @@ CP16: [Atomic snapshot storage and fault handling](CP16/ATOMIC_CHAT_STORAGE_2026
 
 CP16 follow-up: [Opt-in message retry receipts](CP16/MESSAGE_RETRY_RECEIPTS_20261013.md), desktop post-commit/pre-ack crash proof and Android replay PASS (CI 38399249491).
 
-CP16 / CP19 foundation: [Local HTTP browser boundary](CP16/LOCAL_HTTP_BOUNDARY_20261013.md), local negative/positive controls pass; Android CI pending.
+CP16 / CP19 foundation: [Local HTTP browser boundary](CP16/LOCAL_HTTP_BOUNDARY_20261013.md), desktop 111/111 and Android negative/positive controls PASS (CI 38406779812).

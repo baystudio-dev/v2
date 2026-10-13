@@ -37,7 +37,7 @@ External browser links/iframes and remote LAN/proxy hosting are not allowed by t
 - Real backend tests prove rejection before chat mutation or message SSE, retained exact keyed replay behavior, no provider process invocation, raw duplicate-header handling, strict source checks, preflight outcomes, ADB-forwarded port compatibility and byte-identical web asset serving.
 - Shared `scripts/qa/loopback-http-probe.py` exercises **13 hostile contexts** over actual loopback HTTP. It checks stable refusal statuses, absence of CORS permission, unchanged full chat snapshots, plus native and same-origin positive controls. No transcripts are saved as artifacts.
 - The probe runs only inside the existing explicit GitHub/emulator gate, before persistence fixtures. Existing five-message persistence and three-key replay probes now send same-origin browser-shaped headers, so accepted writes are verified as well.
-- Fresh Android CI result is **PENDING**, not inferred from desktop success. The HTTP tests construct browser-shaped headers; actual browser automation of an attacker page, full WebView interactions and physical ARM64 remain untested.
+- Android emulator verification **PASS in CI 38406779812**, with the measured markers below. The HTTP tests construct browser-shaped headers; actual browser automation of an attacker page, full WebView interactions and physical ARM64 remain untested.
 
 ## References used for design, not substitute runtime evidence
 - OWASP CSRF prevention, Origin/Referer checks, Fetch Metadata and simple media types: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
@@ -50,3 +50,18 @@ The project-specific policy and measured results above are evidenced by the sour
 - The probe was incorrectly comparing the entire `/api/chats` response envelope. Source `getPublicStatus()` includes `wakelock.uptimeSec` and `heartbeatAt`, which can change even when every chat message is unchanged. The first-run log does not include payload snapshots, so it cannot identify the exact differing field.
 - The corrected assertion compares every room and complete message object in `chats`, while excluding only sibling status telemetry. Four negative/positive controls prove that telemetry ticks are allowed but changed messages, added/deleted/moved rooms or malformed history still fail.
 - No server request-policy checks were relaxed. A corrected full CI run is required before signoff.
+
+## Verified CI result
+- **Run 38406779812: all four jobs PASS.** https://github.com/bayurohmat608-create/v2/actions/runs/38406779812
+- Tested application/test source: `e993c4a0e0d7d0bd0e6aee07433636f122b4ebc9`.
+- Desktop job ran the full npm smoke (engine version/health checks, not live model prompts) plus **111/111 baseline tests**. All prior 84 tests remain green.
+- Android API 36 x86_64 log: `CP16_LOCAL_HTTP_BOUNDARY_PASS rejected=13 same_origin=1 native=1`. Thirteen hostile HTTP contexts were rejected by the installed backend, allowed native/same-origin reads remained healthy, and history stayed unchanged.
+- Same-origin browser-shaped message headers also passed the existing real app restart gates: `CP16_MESSAGE_RETRY_REPLAY_PASS count=3`, `CP16_CHAT_PERSISTENCE_PASS count=5` and `CP16_ANDROID_CHAT_PERSISTENCE_PASS`.
+- Production PRoot remained green: `CP17_PROOT_PRODUCTION_READONLY_SMOKE_PASS`.
+- Existing PRoot/terminal instrumentation remained green: `OK (4 tests)` and `CP18_PROOT_MANAGER_AND_TERMINAL_INSTRUMENTATION_PASS`.
+- Android ARM64 and x86_64 build/lint/ZIP-alignment jobs passed. Physical ARM64 runtime was **not** tested.
+- Source of all runtime markers: `/home/sprite/v2-http-boundary-evidence-38406779812/ci.log`; summary JSON and run metadata are retained beside it. No new transcript artifact was uploaded.
+- All 37 protected PTY/CMake files and their original worktree Git status were rechecked byte-for-byte unchanged.
+
+## Remaining trust boundary
+This is not authenticated local IPC. A malicious native process on the same machine can forge browser headers or use the originless compatibility path. An authenticated owner/capability handoff and room authorization are still needed; the exact 2048 receipt cap, UI retry integration, PTY/IME and live agents are unchanged. No universal exploit-resistance or release-readiness claim is made.

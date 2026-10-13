@@ -4,7 +4,7 @@
 - Parent `8f52bb3`, isolated worktree `/home/sprite/v2-http-boundary-20261013`, local branch `qa/cp16-http-boundary-20261013`. Preserve original PTY/CMake WIP and do not merge main.
 - New `agent/loopback-request-policy.js` validates peer/Host/Origin/Referer/Fetch Metadata, duplicate headers, request target and JSON POSTs before all handlers. Browser-simple POST and hostile Host/origin reflection were reproduced against the parent, then rejected by real backend tests.
 - API payloads and errors are not logged. No web UI/native/provider changes. The old Android media type `application/json; utf-8` is narrowly retained.
-- Local **110/110 PASS**. Android gate uses a shared 13-rejection probe and same-origin persistence/replay requests; CI result PENDING.
+- **CI 38406779812 PASS**, source `e993c4a0e0d7d0bd0e6aee07433636f122b4ebc9`: all four jobs; desktop 111/111; Android 13 rejected HTTP contexts, allowed same-origin/native controls, restart/replay, production PRoot and four instrumentation tests retained.
 - Report: `checkpoints/CP16/LOCAL_HTTP_BOUNDARY_20261013.md`.
 - Originless native/CLI access remains a deliberate compatibility exception, NOT auth. Local hostile apps, same-origin XSS, real browser attack automation, private-room auth, PTY, UI key persistence and physical ARM64 remain unverified. PR stays draft.
 
