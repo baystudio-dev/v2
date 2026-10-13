@@ -1,0 +1,22 @@
+/* Messenger interaction refinement, based on UI/UX Pro Max v2.15.0. */
+:root { --ui-touch: 48px; --ui-ease: cubic-bezier(.2,.75,.25,1); --ui-fast: 140ms; }
+.nav-btn, .tool-btn, .icon-tool, .send-mic-wrap .btn-send, .send-mic-wrap .btn-mic { min-width: var(--ui-touch); min-height: var(--ui-touch); }
+.nav-btn, .tool-btn, .icon-tool, .chip, .btn, .send-mic-wrap .btn-send, .send-mic-wrap .btn-mic { transition: background-color var(--ui-fast) ease, color var(--ui-fast) ease, border-color var(--ui-fast) ease, opacity var(--ui-fast) ease, transform var(--ui-fast) var(--ui-ease); }
+.nav-btn:active, .tool-btn:active, .btn:active { transform: scale(.97); }
+.nav-btn:focus-visible, .tool-btn:focus-visible, .icon-tool:focus-visible, .chip:focus-visible, .btn:focus-visible, .input-box:focus-visible { outline: 2px solid var(--wa-teal, #00a884); outline-offset: 2px; }
+.item-name { font-size: 15px; font-weight: 600; line-height: 1.4; letter-spacing: -.01em; }
+.item-snippet { font-size: 13.5px; line-height: 1.45; }
+.item-time { font-variant-numeric: tabular-nums; }
+.chat-item { min-height: 72px; transition: background-color var(--ui-fast) ease; }
+.chat-item:active { background-color: var(--bg-hover); }
+.bubble { font-size: 14.5px; line-height: 1.5; border-radius: 11px; box-shadow: 0 1px 2px rgba(0,0,0,.09); }
+.bubble-left.has-tail { border-top-left-radius: 3px; }
+.bubble-right.has-tail { border-top-right-radius: 3px; }
+.bubble-action-trigger, [data-theme="light"] .bubble-action-trigger { background: var(--bg-panel); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.input-box { min-height: 44px; border: 1px solid transparent; border-radius: 12px; font-size: 16px; line-height: 1.5; transition: border-color var(--ui-fast) ease; }
+.input-box:focus { border-color: var(--wa-teal); }
+.send-mic-wrap { min-width: 48px; min-height: 48px; }
+.send-mic-wrap .btn-send:hover { transform: none; }
+.send-mic-wrap .btn-send:active { transform: scale(.97); }
+@media (max-width: 768px) { .chat-input-bar { padding: 8px 10px max(8px, env(safe-area-inset-bottom)); gap: 6px; } .bubble { max-width: 86%; } .item-details { padding-right: 12px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
