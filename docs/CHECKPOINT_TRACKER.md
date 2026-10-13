@@ -160,3 +160,5 @@ Active CP16 branch: feature/v2-android-build-admission-20261008 (local)
 
 - ✅ [x] **CP16 QA-only native PRoot x86_64 emulator PASS:** Android 36 run 38004055930 executed a fixed Alpine BusyBox guest command under app UID using clean candidate ELF and talloc; all four CI jobs passed. Evidence: checkpoints/CP16/PROOT_QA_PASS_38004055930.md.
 - ⬜ [ ] **CP16 production PRoot and physical ARM64:** NOT VERIFIED. Existing production ELF/loader unchanged, PTY/agent workflows and 16 KiB physical runtime untested. PR #1 remains draft.
+
+- [ ] CI 38398293447: older ELF inspection hit a 4000 ms nm timeout (desktop 83/84); retry tests passed. Bounded tool deadline increased to 15000 ms without removing any native validation. Await corrected full CI.

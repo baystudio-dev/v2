@@ -54,3 +54,8 @@ No live agents, authenticated room privacy, attachment transactions, E2EE, power
 - HTTP retry semantics, especially the warning against blind retries of non-idempotent requests: https://www.rfc-editor.org/rfc/rfc9110.html#section-9.2.2
 - Node.js SHA-256 hashing API: https://nodejs.org/download/release/v24.21.0/docs/api/crypto.html#cryptocreatehashalgorithm-options
 These inform the design; the repository tests and actual CI markers remain the runtime evidence.
+
+## First CI attempt: existing ELF-tool deadline
+- CI 38398293447 desktop job executed all 17 new retry tests successfully, but the older native dependency test failed with `spawnSync nm ETIMEDOUT` at its 4000 ms deadline. The desktop result was **83/84**, not a green full pipeline.
+- Increased only the native inspection subprocess deadline to 15000 ms. All pinned hashes, dependency, symbol and LOAD-alignment assertions remain mandatory. No binary changed, no failed test skipped, and this is not a claim of a 15-second runtime performance target.
+- The full corrected revision needs a fresh CI result before being declared verified.

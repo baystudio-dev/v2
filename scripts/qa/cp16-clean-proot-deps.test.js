@@ -9,7 +9,9 @@ const root=resolve(__dirname,"../..");
 const lib=join(root,"android/app/src/main/jniLibs/x86_64");
 const sha=p=>createHash("sha256").update(readFileSync(p)).digest("hex");
 function elf(tool,args) {
-  const r=spawnSync(tool,args,{encoding:"utf8",timeout:4000});
+  // Tool startup on a shared CI runner is not an ELF performance benchmark.
+  // Keep a bounded deadline and every existing hash/symbol/alignment assertion.
+  const r=spawnSync(tool,args,{encoding:"utf8",timeout:15000});
   assert.equal(r.status,0,r.stderr||r.error?.message);
   return r.stdout;
 }

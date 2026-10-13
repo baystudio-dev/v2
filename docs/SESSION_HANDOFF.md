@@ -230,3 +230,8 @@
 - Real desktop process SIGKILL/restart x3 PASS. Negative controls reject lost/duplicated/moved/modified histories. Fresh emulator persistence evidence is PENDING.
 - `npm test` now includes `qa:baseline`, ensuring the existing desktop CI job actually runs all contract/integration tests.
 - Report: checkpoints/CP16/CHAT_PERSISTENCE_GATE_20261013.md. No production server/UI/native change; power-loss/partial-write durability, live agents, PTY and physical ARM64 remain unverified.
+
+## First CI attempt: existing ELF-tool deadline
+- CI 38398293447 desktop job executed all 17 new retry tests successfully, but the older native dependency test failed with `spawnSync nm ETIMEDOUT` at its 4000 ms deadline. The desktop result was **83/84**, not a green full pipeline.
+- Increased only the native inspection subprocess deadline to 15000 ms. All pinned hashes, dependency, symbol and LOAD-alignment assertions remain mandatory. No binary changed, no failed test skipped, and this is not a claim of a 15-second runtime performance target.
+- The full corrected revision needs a fresh CI result before being declared verified.
