@@ -5,9 +5,10 @@ const { execFile, spawn, spawnSync } = require("child_process");
 const { getTeamRegistry } = require("./agent/team-registry");
 const { AtomicChatStore, ChatStorageError } = require("./agent/atomic-chat-store");
 const { MessageReceiptError, prepareMessageRequest, emptyReceipts, findMessageReplay, appendMessageReceipt } = require("./agent/message-receipts");
+const { assertLoopbackBind, enforceLoopbackRequest } = require("./agent/loopback-request-policy");
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || "127.0.0.1";
+const HOST = assertLoopbackBind(process.env.HOST || "127.0.0.1");
 const USER_HOME = process.env.HOME || __dirname;
 const RUNTIME_DIR = process.env.CHAT_AI_RUNTIME_DIR || path.join(__dirname, ".runtime");
 const LOCAL_BIN_DIR = path.join(__dirname, ".local", "bin");
@@ -2526,7 +2527,8 @@ setInterval(() => {
 
 // HTTP Server
 function handleHttpRequest(req, res) {
-  const url = new URL(req.url, `http://${req.headers.host || "localhost:" + PORT}`);
+  const url = enforceLoopbackRequest(req, res);
+  if (!url) return;
 
   // Antigravity integration is disabled by product policy and current Google Terms.
   if (
@@ -2541,39 +2543,12 @@ function handleHttpRequest(req, res) {
     return;
   }
 
-  // Same-origin CORS. Native/CLI calls without Origin remain allowed.
-  const origin = req.headers.origin;
-  if (origin) {
-    const host = req.headers.host || `127.0.0.1:${PORT}`;
-    const allowed = new Set([
-      `http://${host}`,
-      `https://${host}`,
-      `http://127.0.0.1:${PORT}`,
-      `http://localhost:${PORT}`
-    ]);
-    if (!allowed.has(origin)) {
-      res.writeHead(403, { "Content-Type": "application/json; charset=utf-8" });
-      res.end(JSON.stringify({ error: "Origin tidak diizinkan" }));
-      return;
-    }
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Vary", "Origin");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") {
-    res.writeHead(204);
-    res.end();
-    return;
-  }
-
   // API Routes
   if (url.pathname === "/api/events") {
     if (chatStorageReadError) { sendChatStorageFailure(res, chatStorageReadError); return; }
     res.writeHead(200, {
       "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
+      "Cache-Control": "no-store, no-transform",
       Connection: "keep-alive",
       "X-Accel-Buffering": "no"
     });

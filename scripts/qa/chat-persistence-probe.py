@@ -43,7 +43,8 @@ def loopback_url(value: str) -> str:
 def request_json(base: str, path: str, body: dict[str, Any] | None = None) -> Any:
     encoded = None if body is None else json.dumps(body, ensure_ascii=False).encode("utf-8")
     request = urllib.request.Request(base + path, data=encoded,
-                                    headers={"Content-Type": "application/json"})
+                                    headers={"Content-Type": "application/json", "Origin": base,
+                                             "Referer": base + "/", "Sec-Fetch-Site": "same-origin"})
     # Do not consult HTTP_PROXY, and never follow a redirect away from localhost.
     class NoRedirect(urllib.request.HTTPRedirectHandler):
         def redirect_request(self, *args: Any, **kwargs: Any) -> None:

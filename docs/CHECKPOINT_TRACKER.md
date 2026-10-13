@@ -103,6 +103,9 @@ Active CP16 branch: feature/v2-android-build-admission-20261008 (local)
 - [x] **CI 38399249491 PASS**: desktop 84/84 and Android 36 keyed replay count=3 after restart; original five messages, production PRoot and four terminal tests preserved. Evidence: checkpoints/CP16/MESSAGE_RETRY_RECEIPTS_20261013.md.
 - [ ] UI persisted keys, triggered-agent idempotency, auth and safe receipt retention/migration remain unimplemented; bounded 2048-receipt capacity has no automatic eviction.
 
+- [x] Loopback HTTP boundary implemented: validated Host/peer/source/media type before routes, 110/110 local tests. Old hostile-Host reflection and text/plain mutation reproduced and then rejected. Evidence: checkpoints/CP16/LOCAL_HTTP_BOUNDARY_20261013.md.
+- [ ] Android HTTP boundary probe: PENDING fresh CI. Native/CLI no-Origin compatibility is not authentication; per-room capabilities and UI retry integration remain separate gates.
+
 ## CP17 Personal release
 - ⬜ [ ] Personal APK, source ZIP, SBOM/licenses, no credentials and clean history.
 

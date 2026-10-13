@@ -1,5 +1,14 @@
 # SESSION HANDOFF • WhatsApp Agent V2
 
+## Latest continuation: local HTTP browser boundary (2026-10-13)
+- Parent `8f52bb3`, isolated worktree `/home/sprite/v2-http-boundary-20261013`, local branch `qa/cp16-http-boundary-20261013`. Preserve original PTY/CMake WIP and do not merge main.
+- New `agent/loopback-request-policy.js` validates peer/Host/Origin/Referer/Fetch Metadata, duplicate headers, request target and JSON POSTs before all handlers. Browser-simple POST and hostile Host/origin reflection were reproduced against the parent, then rejected by real backend tests.
+- API payloads and errors are not logged. No web UI/native/provider changes. The old Android media type `application/json; utf-8` is narrowly retained.
+- Local **110/110 PASS**. Android gate uses a shared 13-rejection probe and same-origin persistence/replay requests; CI result PENDING.
+- Report: `checkpoints/CP16/LOCAL_HTTP_BOUNDARY_20261013.md`.
+- Originless native/CLI access remains a deliberate compatibility exception, NOT auth. Local hostile apps, same-origin XSS, real browser attack automation, private-room auth, PTY, UI key persistence and physical ARM64 remain unverified. PR stays draft.
+
+
 ## Latest continuation: opt-in message retry receipts (2026-10-13)
 - Based on `54a0482`, isolated worktree `/home/sprite/v2-message-retry-20261013`, local branch `qa/cp16-message-retry-20261013`. Original 37-file PTY/CMake WIP fingerprint preserved.
 - `agent/message-receipts.js` adds bounded persistent idempotency for explicitly keyed user messages with triggerTurn=false in the three legacy rooms. No UI/agent wiring changed.

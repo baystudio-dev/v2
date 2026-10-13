@@ -1,0 +1,46 @@
+# CP16 / CP19 foundation: local HTTP request boundary
+
+## Baseline and scope
+- Parent PR #1 head: `8f52bb3a1fa1e3abdf18a3e456798f768cf7d6db`, following retry-receipt CI 38399249491.
+- Isolated worktree: `/home/sprite/v2-http-boundary-20261013`, branch `qa/cp16-http-boundary-20261013`.
+- Original PTY/CMake WIP was fingerprinted: 37 dirty/untracked files. None is edited or included. No change to main, web UI source, native binaries, Android Kotlin/C++, provider credentials or workflow permissions.
+- This checkpoint hardens the browser-to-loopback boundary before wider client/API integration. It does NOT implement caller authentication, room ACLs, encryption or client retry UI.
+
+## Reproduced issues in the pinned parent
+Two tests ran against the real old `server.js` in disposable storage and failed as expected:
+1. A request with matching hostile `Host: rebound.invalid:3000` and `Origin: http://rebound.invalid:3000` received HTTP 200 from `/api/chats`. The prior CORS allowlist trusted the unvalidated request Host.
+2. An originless `text/plain` POST containing JSON was accepted by the inert internal chat endpoint and returned HTTP 200. The backend parsed browser-simple media types as JSON mutations.
+The same tests now require 403 and 415 respectively and assert no changes to disk or message SSE. This is HTTP-level reproduction, not an end-to-end browser DNS-rebinding exploit demonstration. The isolated pre-fix log is `/home/sprite/v2-http-boundary-before-20261013.log`.
+
+## Implemented policy
+`agent/loopback-request-policy.js` is called before every route, including SSE, disabled auth endpoints and static assets.
+
+- Listener configuration is restricted to literal `127.0.0.1`, `::1` or `localhost`. Wildcard/LAN/public binds are rejected; supported peer addresses are loopback IPv4, IPv6 and IPv4-mapped loopback.
+- HTTP Host must be canonical `127.0.0.1`, `localhost` or `[::1]` with an optional valid port. DNS domains, userinfo, trailing dots, shorthand/hex IPs, malformed ports and duplicate security headers are rejected.
+- Ports are deliberately not forced to the socket's port: existing ADB forwarding uses host port 33000 for device port 3000. This does not grant trust to another host.
+- Any present Origin must equal the exact validated HTTP scheme/host/port. `localhost` and `127.0.0.1` are not interchangeable source origins. `null`, empty, multi-origin and path-bearing origins are denied.
+- Any present Referer is also checked; a contradictory referrer cannot override or be hidden by Origin. Cross-site and same-site Fetch Metadata are denied for reads and writes. Unknown Sec-Fetch-Site values fail closed. API no-cors and embedding contexts are denied.
+- Duplicate Host/Origin/Referer/Content-Type/Fetch Metadata/preflight headers are detected from Node rawHeaders rather than trusting a normalized field that can discard duplicates.
+- Request targets must be origin-form paths, never absolute/proxy URLs or authority overrides. Forwarded headers do not grant trust.
+- API POST requires application/json with optional UTF-8 charset. The exact legacy `application/json; utf-8` form is also accepted because existing Android QuickReplyReceiver and TerminalFeedbackManager use it. Other simple media types are denied before handlers. No native client was modified.
+- Supported HTTP methods are GET, HEAD, POST and OPTIONS; event streaming requires GET. Validated same-origin preflight permits only the supported methods and Content-Type header, without wildcard origins, credentials, or private-network grants.
+- Responses carry no-sniff, same-origin resource policy and anti-framing headers. API responses use no-store; SSE retains no-transform but now also no-store.
+- Rejected requests get stable redacted errors and no Access-Control-Allow-Origin. No attacker URL, transcript, credential or request body is echoed or logged by the policy.
+
+## Explicit compatibility exception and security limits
+Native/CLI requests without Origin/Referer/Fetch Metadata remain accepted from loopback with validated Host and JSON media type. This is compatibility for Android health checks, terminal feedback and local tooling, NOT authentication. A local native process can forge headers. Same-origin XSS, malicious local apps, a trusted-origin compromised renderer, server-side request forgery, compromised OS, reverse proxies, full rate/body/resource limits and per-room authorization remain outside this gate. The legacy local client still has broad chat visibility.
+
+External browser links/iframes and remote LAN/proxy hosting are not allowed by this strict local-workstation policy. Unknown or unusual embedded-browser provenance can now be rejected. No claim of universal CSRF protection or fully secure agent runtime is made.
+
+## Verification before publication
+- **110/110 local baseline tests PASS**, comprising all prior 84 tests and 26 new unit/live HTTP/CI-wiring tests.
+- Real backend tests prove rejection before chat mutation or message SSE, retained exact keyed replay behavior, no provider process invocation, raw duplicate-header handling, strict source checks, preflight outcomes, ADB-forwarded port compatibility and byte-identical web asset serving.
+- Shared `scripts/qa/loopback-http-probe.py` exercises **13 hostile contexts** over actual loopback HTTP. It checks stable refusal statuses, absence of CORS permission, unchanged full chat snapshots, plus native and same-origin positive controls. No transcripts are saved as artifacts.
+- The probe runs only inside the existing explicit GitHub/emulator gate, before persistence fixtures. Existing five-message persistence and three-key replay probes now send same-origin browser-shaped headers, so accepted writes are verified as well.
+- Fresh Android CI result is **PENDING**, not inferred from desktop success. The HTTP tests construct browser-shaped headers; actual browser automation of an attacker page, full WebView interactions and physical ARM64 remain untested.
+
+## References used for design, not substitute runtime evidence
+- OWASP CSRF prevention, Origin/Referer checks, Fetch Metadata and simple media types: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+- Fetch Standard and browser-controlled request headers: https://fetch.spec.whatwg.org/
+- Node HTTP rawHeaders and duplicate-header behavior: https://nodejs.org/api/http.html#messagerawheaders
+The project-specific policy and measured results above are evidenced by the source/tests and subsequent CI log, not asserted by those external references.

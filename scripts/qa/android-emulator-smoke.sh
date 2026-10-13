@@ -69,6 +69,7 @@ if [ "$persistence_enabled" = 1 ]; then
     echo "CP16_CHAT_PERSISTENCE_REQUIRES_EMULATOR"
     exit 60
   fi
+  python3 scripts/qa/loopback-http-probe.py --isolated-test --base-url http://127.0.0.1:33000
   PERSISTENCE_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/cp16-chat-persistence.XXXXXX")"
   python3 scripts/qa/chat-persistence-probe.py seed --isolated-test \
     --base-url http://127.0.0.1:33000 --proof "$PERSISTENCE_DIR/expected.json"

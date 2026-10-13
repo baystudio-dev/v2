@@ -100,7 +100,7 @@ for(const name of ['spawn','spawnSync','exec','execSync','execFile','execFileSyn
   }
   t.after(async () => { await stop(); fs.rmSync(root, { recursive: true, force: true }); });
   await start();
-  return { request, observe, start, stop, file, runtime,
+  return { request, observe, start, stop, file, runtime, base,
     disk: () => JSON.parse(fs.readFileSync(file, "utf8")),
     bytes: () => fs.readFileSync(file, "utf8"),
     commits: () => fs.existsSync(writes) ? fs.readFileSync(writes, "utf8").trim().split("\n").length : 0,
