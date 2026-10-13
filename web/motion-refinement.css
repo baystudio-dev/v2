@@ -1,0 +1,12 @@
+/* Motion polish: subtle feedback and reduced-motion support. */
+:root { --motion-quick: 140ms; --motion-standard: 220ms; --motion-ease: cubic-bezier(.2,.75,.25,1); }
+.nav-btn, .icon-tool, .chip, .btn { transition: background-color var(--motion-quick) ease, color var(--motion-quick) ease, border-color var(--motion-quick) ease, transform var(--motion-quick) var(--motion-ease); }
+.nav-btn:active, .icon-tool:active, .btn:active { transform: scale(.96); }
+.chip:active { transform: scale(.975); }
+.chat-item { transition: background-color var(--motion-quick) ease; }
+.chat-item:active { background-color: var(--bg-hover); }
+.nav-btn:focus-visible, .icon-tool:focus-visible, .chip:focus-visible, .btn:focus-visible, .chat-item:focus-visible { outline: 2px solid var(--accent, #00a884); outline-offset: 2px; }
+.modal-overlay:not([style*="display: none"]):not([style*="display:none"]) .modal-content { animation: dialog-enter var(--motion-standard) var(--motion-ease) both; }
+@keyframes dialog-enter { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (hover: none) { .nav-btn:hover, .icon-tool:hover, .chip:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
