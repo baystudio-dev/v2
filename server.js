@@ -3678,6 +3678,30 @@ Tulis 1 pesan inisiatif japri (1-2 kalimat) yang ramah dan solutif ke Boss Bayu.
     return;
   }
 
+  if (url.pathname.startsWith("/licenses/")) {
+    const relative = url.pathname.slice("/licenses/".length);
+    const legalDocuments = new Set([
+      "third_party/THIRD_PARTY_NOTICES.md",
+      "third_party/licenses/PRoot-GPL-2.0.txt",
+      "third_party/licenses/talloc-LGPL-3.0-or-later.txt",
+      "third_party/licenses/libandroid-shmem-BSD-3-Clause.txt"
+    ]);
+    if (!legalDocuments.has(relative)) {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("Not found");
+      return;
+    }
+    const documentPath = path.join(WEB_DIR, "licenses", relative);
+    fs.readFile(documentPath, (error, content) => {
+      res.writeHead(error ? 404 : 200, {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      });
+      res.end(error ? "Not found" : content);
+    });
+    return;
+  }
   // Static File Serving
   const cleanPath = url.pathname === "/" ? "index.html" : url.pathname.replace(/^\/+/, "");
   let filePath = path.join(WEB_DIR, cleanPath);

@@ -4289,3 +4289,8 @@ button:focus-visible, .form-select:focus-visible, .form-input:focus-visible,
 .btn-quick-term:active {
   transform: translateY(0);
 }
+
+.legal-dialog { width:min(92vw,720px); max-height:88vh; overflow:auto; }
+.legal-header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+#legalDocument { width:100%; padding:10px; margin:8px 0; color:inherit; background:var(--panel-bg,#202c33); border:1px solid #667781; border-radius:6px; }
+#legalText { white-space:pre-wrap; overflow-wrap:anywhere; max-height:48vh; overflow:auto; padding:12px; border:1px solid #667781; border-radius:6px; font-size:12px; line-height:1.55; user-select:text; }

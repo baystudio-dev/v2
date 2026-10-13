@@ -1269,6 +1269,7 @@
       <div class="modal-box-footer">
         <button class="btn btn-secondary" id="btnClearChatHistory" style="margin-right: auto;">Bersihkan Chat Ini</button>
         <button class="btn btn-secondary" id="btnCancelSettings">Tutup</button>
+        <button class="btn btn-secondary" type="button" id="btnOpenLegal">About &amp; Legal</button>
         <button class="btn btn-primary" id="btnSaveSettings">Simpan Pengaturan</button>
       </div>
     </div>
@@ -1492,5 +1493,25 @@ Ketik perintah di bawah atau klik shortcut di atas untuk memulai...
 
   <script src="vendor/highlight.min.js"></script>
   <script src="app.js?v=3.2"></script>
+  <div class="modal-overlay" id="legalModal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="legalTitle">
+    <section class="modal-content legal-dialog">
+      <header class="legal-header">
+        <h2 id="legalTitle">About &amp; Legal</h2>
+        <button type="button" id="btnCloseLegal" class="btn" aria-label="Tutup lisensi">Tutup</button>
+      </header>
+      <p>WhatsApp AI Team V2 · Open-source licenses dan pemberitahuan pihak ketiga.</p>
+      <p id="legalStatus" role="status">Pilih dokumen untuk membacanya.</p>
+      <label for="legalDocument">Dokumen lisensi</label>
+      <select id="legalDocument">
+        <option value="THIRD_PARTY_NOTICES.md">Third-party notices</option>
+        <option value="licenses/PRoot-GPL-2.0.txt">PRoot · GPL-2.0</option>
+        <option value="licenses/talloc-LGPL-3.0-or-later.txt">talloc · LGPL-3.0-or-later</option>
+        <option value="licenses/libandroid-shmem-BSD-3-Clause.txt">libandroid-shmem · BSD-3-Clause</option>
+      </select>
+      <pre id="legalText" tabindex="0"></pre>
+      <p>Source dan petunjuk distribusi: <a href="https://github.com/bayurohmat608-create/v2" target="_blank" rel="noopener noreferrer">GitHub BayStudio</a>.</p>
+    </section>
+  </div>
+  <script src="legal.js" defer></script>
 </body>
 </html>

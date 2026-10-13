@@ -61,6 +61,8 @@ class NodeRuntimeManager(
         copyAssetDirectory("server", serverDir)
         val webDir = File(serverDir, "web").apply { mkdirs() }
         copyAssetDirectory("web", webDir)
+        val legalDir = File(webDir, "licenses").apply { mkdirs() }
+        copyAssetDirectory("licenses", legalDir)
     }
 
     /**
