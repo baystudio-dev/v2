@@ -118,6 +118,7 @@ val syncRuntimeAssets by tasks.registering(Sync::class) {
     from(repoRoot.resolve("agent")) { into("server/agent") }
     from(repoRoot.resolve("personas")) { into("server/personas") }
     from(repoRoot.resolve("web")) { into("web") }
+    from(repoRoot.resolve("third_party")) { into("licenses/third_party") }
     from(alpineRootfsDir) { into("rootfs") }
 }
 
