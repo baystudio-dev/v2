@@ -55,6 +55,22 @@ if [ "$ready" -ne 1 ]; then
 fi
 test -s runtime-status.json
 curl -fsS --max-time 5 http://127.0.0.1:33000/ >/dev/null
+# Visual evidence only: no private chat dump and no model invocation.
+if [ "${CP16_UI_CAPTURE:-0}" = 1 ]; then
+  adb shell input keyevent KEYCODE_BACK || true
+  sleep 2
+  adb exec-out screencap -p >runtime-ui-portrait.png
+  python3 - <<'PY'
+from pathlib import Path
+import struct
+p=Path("runtime-ui-portrait.png")
+data=p.read_bytes()
+assert data[:8]==b"\x89PNG\r\n\x1a\n", "Screenshot is not PNG"
+width,height=struct.unpack(">II",data[16:24])
+assert width>=320 and height>=480, "Unexpected emulator screenshot dimensions"
+print(f"CP16_UI_PORTRAIT_CAPTURE_PASS {width}x{height}")
+PY
+fi
 echo "CP16_EMULATOR_RUNTIME_SMOKE_PASS"
 # Mutating fixture gate is restricted to an ephemeral GitHub CI emulator.
 # This never calls a provider and does not accept a physical-device target.
