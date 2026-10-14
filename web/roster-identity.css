@@ -1,0 +1,38 @@
+/* Quiet identity system for the built-in roster, without decorative portraits. */
+.chat-list .avatar-vector.avatar-group,
+.chat-list .avatar-vector.avatar-budi,
+.chat-list .avatar-vector.avatar-rian,
+.chat-list .avatar-vector.avatar-bayu,
+.nav-bottom .avatar-vector.avatar-bayu {
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #334650;
+  border: 1px solid rgba(255,255,255,.08);
+}
+.chat-list .avatar-vector.avatar-group { background: #345c55; }
+.chat-list .avatar-vector.avatar-budi { background: #35516a; }
+.chat-list .avatar-vector.avatar-rian { background: #65503f; }
+.chat-list .avatar-vector.avatar-bayu,
+.nav-bottom .avatar-vector.avatar-bayu { background: #4b555e; }
+.chat-list .avatar-vector.avatar-group > svg,
+.chat-list .avatar-vector.avatar-budi > svg,
+.chat-list .avatar-vector.avatar-rian > svg,
+.chat-list .avatar-vector.avatar-bayu > svg,
+.nav-bottom .avatar-vector.avatar-bayu > svg { display: none; }
+.chat-list .avatar-vector.avatar-group::after { content: "T"; }
+.chat-list .avatar-vector.avatar-budi::after { content: "B"; }
+.chat-list .avatar-vector.avatar-rian::after { content: "R"; }
+.chat-list .avatar-vector.avatar-bayu::after,
+.nav-bottom .avatar-vector.avatar-bayu::after { content: "B"; }
+.chat-list .avatar-vector::after,
+.nav-bottom .avatar-vector.avatar-bayu::after {
+  color: #f4f7f8;
+  font: 650 20px/1 system-ui, sans-serif;
+  letter-spacing: -.04em;
+}
+.nav-bottom .avatar-vector.avatar-bayu::after { font-size: 16px; }
+[data-theme="light"] .chat-list .avatar-vector,
+[data-theme="light"] .nav-bottom .avatar-vector.avatar-bayu { border-color: rgba(0,0,0,.06); }
