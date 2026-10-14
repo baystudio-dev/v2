@@ -1,8 +1,4 @@
-/* =========================================================
-   WHATSAPP WEB SUPER APP — UI/UX PRO MAX DESIGN SYSTEM
-   Authentic WhatsApp Web & Mobile Responsive Interface
-   Pure Vector SVGs • Zero Icon Emojis • Fixed Scroll Engine
-   ========================================================= */
+/* Messenger interface styles. */
 
 :root {
   /* WhatsApp Dark Mode (Default) */
@@ -1080,7 +1076,7 @@ mark.search-highlight {
 mark.search-highlight.active-match {
   background-color: #f77f00;
   color: #ffffff;
-  box-shadow: 0 0 6px #f77f00;
+  box-shadow: none;
 }
 
 /* Date Pill & Security Banner */
@@ -1203,7 +1199,7 @@ mark.search-highlight.active-match {
 /* Highlight flash animation when scrolling to quoted message */
 @keyframes highlightFlash {
   0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.5); box-shadow: 0 0 12px var(--wa-teal); }
+  50% { background-color: var(--bg-active); }
 }
 
 .bubble.highlight-pulse {
@@ -1216,7 +1212,7 @@ mark.search-highlight.active-match {
   top: 3px;
   right: 3px;
   opacity: 0;
-  background: linear-gradient(135deg, rgba(32, 44, 51, 0.88), rgba(17, 27, 33, 0.88));
+  background: var(--bg-panel);
   border-radius: 50%;
   width: 22px;
   height: 22px;
@@ -1232,7 +1228,7 @@ mark.search-highlight.active-match {
 }
 
 [data-theme="light"] .bubble-action-trigger {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(240, 242, 245, 0.9));
+  background: var(--bg-panel);
 }
 
 .bubble:hover .bubble-action-trigger {
@@ -3703,7 +3699,7 @@ mark.search-highlight.active-match {
 .engine-choice-card.selected {
   border-color: #00a884;
   background: rgba(0, 168, 132, 0.12);
-  box-shadow: 0 0 12px rgba(0, 168, 132, 0.25);
+  box-shadow: none;
 }
 
 .engine-choice-icon-wrap {
@@ -4053,7 +4049,7 @@ mark.search-highlight.active-match {
   align-items: center;
   justify-content: center;
   margin: 0 auto 12px auto;
-  box-shadow: 0 0 16px rgba(0, 168, 132, 0.5);
+  box-shadow: none;
 }
 
 .success-title {

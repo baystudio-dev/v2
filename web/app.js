@@ -2843,7 +2843,7 @@ document.addEventListener("DOMContentLoaded", () => {
           playSentSound();
           showToast(`Konteks berhasil dipadatkan! (${data.compactedCount || 0} pesan diringkas)`);
           const badge = document.getElementById("memoryStatusBadge");
-          if (badge) badge.textContent = "Dipadatkan ✓";
+          if (badge) badge.textContent = "Dipadatkan";
           const stat = document.getElementById("memoryInfoStat");
           if (stat) stat.textContent = "Memori Ringkas & Cepat";
 
@@ -3116,7 +3116,7 @@ function populateSettingsModal() {
     .then(data => {
       const isCompacted = data.contextMemory && !!data.contextMemory[activeChat];
       if (statusBadge) {
-        statusBadge.textContent = isCompacted ? "Sudah Dipadatkan ✓" : "Fokus Topik Aktif";
+        statusBadge.textContent = isCompacted ? "Sudah dipadatkan" : "Fokus Topik Aktif";
       }
       if (infoStat) {
         const count = data.chatCounts ? data.chatCounts[activeChat] : (appState.chats[activeChat]?.length || 0);
@@ -3557,7 +3557,7 @@ function setupAuthVaultListeners() {
 
     navigator.clipboard?.writeText(code)
       .then(() => {
-        if (copyCodexCodeLabel) copyCodexCodeLabel.textContent = "Tersalin! ✓";
+        if (copyCodexCodeLabel) copyCodexCodeLabel.textContent = "Tersalin";
         showToast("Kode otorisasi OpenAI tersalin.");
         setTimeout(() => {
           if (copyCodexCodeLabel) copyCodexCodeLabel.textContent = "Salin Kode";
