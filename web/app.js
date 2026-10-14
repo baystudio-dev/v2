@@ -615,7 +615,7 @@ function connectSSE() {
     try {
       const data = JSON.parse(e.data);
       const name = CHAT_METADATA[data.chatId]?.title || "chat";
-      showToast(`🧠 Konteks ${name} telah dipadatkan.`);
+      showToast(`Konteks ${name} telah dipadatkan.`);
       fetchChats();
     } catch (err) {}
   });
@@ -1121,7 +1121,7 @@ function copyCodeSnippet(btn) {
     btn.classList.add("copied");
     const span = btn.querySelector("span");
     const origText = span ? span.textContent : "Salin";
-    if (span) span.textContent = "Tersalin! ✅";
+    if (span) span.textContent = "Tersalin";
     setTimeout(() => {
       btn.classList.remove("copied");
       if (span) span.textContent = origText;
@@ -2841,7 +2841,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (data.success) {
           playSentSound();
-          showToast(`🧠 Konteks berhasil dipadatkan! (${data.compactedCount || 0} pesan diringkas)`);
+          showToast(`Konteks berhasil dipadatkan! (${data.compactedCount || 0} pesan diringkas)`);
           const badge = document.getElementById("memoryStatusBadge");
           if (badge) badge.textContent = "Dipadatkan ✓";
           const stat = document.getElementById("memoryInfoStat");
@@ -2868,7 +2868,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.AndroidBridge && window.AndroidBridge.toggleTerminal) {
       window.AndroidBridge.toggleTerminal("alpine");
     } else {
-      showToast("💻 Terminal Overlay aktif dalam mode Native Android.");
+      showToast("Terminal overlay aktif dalam mode Native Android.");
     }
   });
   document.getElementById("btnCheckKadb")?.addEventListener("click", () => {
@@ -2876,8 +2876,8 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const status = JSON.parse(window.AndroidBridge.getKadbStatus());
         const text = status.connected 
-          ? `🔌 KADB Terhubung di port ${status.port}!` 
-          : `⚠️ KADB belum terhubung (Port: ${status.port}). Aktifkan Wireless Debugging di Pengaturan Pengembang Android.`;
+          ? `KADB terhubung di port ${status.port}!`
+          : `KADB belum terhubung (Port: ${status.port}). Aktifkan Wireless Debugging di Pengaturan Pengembang Android.`;
         showToast(text);
         const kadbEl = document.getElementById("kadbStatusText");
         if (kadbEl) kadbEl.textContent = status.connected ? `Terhubung (Port ${status.port})` : "Wireless Debugging Belum Aktif";
@@ -3168,7 +3168,7 @@ async function switchWorkstation(target) {
     });
     const data = await res.json();
     if (data.success) {
-      showToast(`🚀 Berhasil beralih ke workstation ${data.active.toUpperCase()}`);
+      showToast(`Berhasil beralih ke workstation ${data.active.toUpperCase()}`);
       loadWorkstationStatus();
     } else {
       showToast(data.error || "Gagal beralih workstation");
@@ -3349,7 +3349,7 @@ function renderAuthVaultUI() {
             if (res.success) {
               appState.authVault = res.vault;
               playSentSound();
-              showToast(`✅ Berhasil beralih ke: ${p.alias}`);
+              showToast(`Berhasil beralih ke: ${p.alias}`);
               renderAuthVaultUI();
             } else {
               showToast("Gagal beralih akun: " + (res.error || ""));
@@ -3478,7 +3478,7 @@ function setupAuthVaultListeners() {
     }
 
     playSentSound();
-    showToast(`✅ OpenAI terhubung: ${profile.alias || profile.email || "Codex"}`);
+    showToast(`OpenAI terhubung: ${profile.alias || profile.email || "Codex"}`);
     appState.currentVaultTab = "codex";
     loadAuthVault();
 
