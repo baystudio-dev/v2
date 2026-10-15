@@ -1,5 +1,14 @@
 # SESSION HANDOFF • WhatsApp Agent V2
 
+
+## LATEST CP16 ARM64 native linker candidate • 2026-10-16
+- User screenshot from real Android ARM64 shows `libproot_exec.so` dynamic linker failure for `talloc_enable_leak_report`. Switching models cannot fix that failure; no provider execution occurred.
+- Isolated worktree `/home/sprite/v2-arm64-proot-linkfix-20261016`, branch `fix/android-arm64-proot-linker-20261016`, parent `2d6554d`. Other worktrees/PR #1/main untouched.
+- Rebuilt matched ARM64 PRoot + new SONAME `libtalloc_candidate.so` + loader using pinned NDK27 and verified PRoot/talloc/shmem sources. Added build recipe, regression guard and APK payload checker, with 16K ELF segment alignment.
+- `npm run qa:baseline` **133/133 PASS**; ARM64 Gradle `lintDebug assembleDebug` **BUILD SUCCESSFUL**; new APK SHA256 `7dbe51e935932d930a1b8b5881ab40c596bc5b502f34540d8ee4c025a69a2878`. Old and new debug APK certificates have identical SHA256.
+- No physical ARM64 run proof, no real agent/provider reply guarantee, no authenticated private-room or verified E2EE claim. Preserve app data, request update-install test without uninstall.
+- Evidence: `checkpoints/CP16/ARM64_NATIVE_LINKER_FIX_20261016.md` and `scripts/qa/arm64-proot-linker.test.js`. Do not merge to main until device QA.
+
 ## Latest continuation: local HTTP browser boundary (2026-10-13)
 - Parent `8f52bb3`, isolated worktree `/home/sprite/v2-http-boundary-20261013`, local branch `qa/cp16-http-boundary-20261013`. Preserve original PTY/CMake WIP and do not merge main.
 - New `agent/loopback-request-policy.js` validates peer/Host/Origin/Referer/Fetch Metadata, duplicate headers, request target and JSON POSTs before all handlers. Browser-simple POST and hostile Host/origin reflection were reproduced against the parent, then rejected by real backend tests.

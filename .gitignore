@@ -48,3 +48,6 @@ android/app/build/
 .runtime/
 .vendor/
 .server.pid
+# Derived local native builds and Android CMake caches
+.native-proot-arm64/
+android/app/.cxx/

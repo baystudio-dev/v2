@@ -107,6 +107,11 @@ Active CP16 branch: feature/v2-android-build-admission-20261008 (local)
 - [x] **CI 38406779812 PASS**: desktop 111/111 and Android 13 rejected HTTP contexts with native/same-origin positive controls; chat/retry, production PRoot and four instrumentation tests retained. Evidence: checkpoints/CP16/LOCAL_HTTP_BOUNDARY_20261013.md.
 - [ ] Native/CLI no-Origin compatibility is NOT authentication; per-room capabilities, same-origin XSS prevention and UI retry integration remain separate gates.
 
+### CP16 ARM64 physical-linker follow-up (2026-10-16)
+- ✅ [x] Rebuilt matched ARM64 PRoot + talloc candidate + guest loader from hash-pinned upstream sources; 16 KiB LOAD alignment verified for all three ELFs. Evidence: `checkpoints/CP16/ARM64_NATIVE_LINKER_FIX_20261016.md`.
+- ✅ [x] Desktop regression 133/133 PASS, Gradle ARM64 `lintDebug assembleDebug` BUILD SUCCESSFUL; packaged APK inspected and SHA-256 recorded. Verified x86_64 bytes unchanged.
+- ⬜ [ ] Real device ARM64 linker fix, PRoot `--help`, Alpine guest execution and agent roundtrip **NOT YET VERIFIED**. Build is a test candidate only.
+
 ## CP17 Personal release
 - ⬜ [ ] Personal APK, source ZIP, SBOM/licenses, no credentials and clean history.
 
