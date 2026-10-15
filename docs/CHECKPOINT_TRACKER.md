@@ -112,6 +112,13 @@ Active CP16 branch: feature/v2-android-build-admission-20261008 (local)
 - ✅ [x] Desktop regression 133/133 PASS, Gradle ARM64 `lintDebug assembleDebug` BUILD SUCCESSFUL; packaged APK inspected and SHA-256 recorded. Verified x86_64 bytes unchanged.
 - ⬜ [ ] Real device ARM64 linker fix, PRoot `--help`, Alpine guest execution and agent roundtrip **NOT YET VERIFIED**. Build is a test candidate only.
 
+### CP16 Android UI interaction QA continuation (2026-10-16)
+- ✅ [x] Native WindowInsets root + terminal dialog respect status, cutout, gesture navigation and IME without double WebView safe-area application. Source: MainActivity.kt, TerminalOverlayDialog.kt, web/mobile-touch-insets.css.
+- ✅ [x] Removed redundant floating terminal FAB covering Send/Mic, fixed landscape terminal Close overflow and unsupported inert controls.
+- ✅ [x] WhatsApp-style configurable Enter/newline, IME composition protection, stable per-chat drafts and HTTP-acknowledged send, long-press context menu and Back behavior.
+- ✅ [x] 142/142 local source contracts PASS; browser fixture interaction tests PASS on five viewport configurations with zero JavaScript errors. Evidence: checkpoints/CP16/WHATSAPP_MOBILE_INTERACTIONS_20261016.md.
+- ⬜ [ ] Real ARM64 status/navigation bar, Gboard, clickability, rotation, Back gesture, model agent, and terminal runtime still require device QA. Simulated voice recording and unverified E2EE wording must not be called parity.
+
 ## CP17 Personal release
 - ⬜ [ ] Personal APK, source ZIP, SBOM/licenses, no credentials and clean history.
 

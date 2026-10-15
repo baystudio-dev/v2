@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="messenger-ui-pro-max-v4.css?v=1">
   <link rel="stylesheet" href="messenger-redesign-v5.css?v=1">
   <link rel="stylesheet" href="roster-identity.css?v=2">
+  <link rel="stylesheet" href="mobile-touch-insets.css?v=1">
   <link rel="stylesheet" id="hljsTheme" href="vendor/highlight-dark.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,7 +79,7 @@
         </button>
 
         <!-- Boss Bayu Profile (Handcrafted Vector Portrait) -->
-        <div class="user-profile-badge" title="Boss Bayu (Ketua Tim & Admin Grup)">
+        <div class="user-profile-badge" title="Boss Bayu (Ketua Tim & Admin Grup)" role="button" tabindex="0" aria-label="Informasi akun Boss Bayu">
           <div class="avatar-vector avatar-bayu">
             <span class="avatar-monogram" data-avatar="bayu" role="img" aria-label="Boss Bayu">B</span>
           </div>
@@ -134,7 +135,7 @@
         <div class="chat-list" id="chatListContainer">
           
           <!-- Item 1: Group Chat (Tim Proyek Boss Bayu) -->
-          <div class="chat-item active" data-chat-id="group" id="chatItem-group">
+          <div class="chat-item active" data-chat-id="group" id="chatItem-group" role="button" tabindex="0">
             <div class="item-avatar-wrapper">
               <div class="avatar-vector avatar-group">
             <span class="avatar-monogram" data-avatar="group" role="img" aria-label="Tim Proyek">T</span>
@@ -153,7 +154,7 @@
           </div>
 
           <!-- Item 2: Direct Chat with Budi (Tech Lead) -->
-          <div class="chat-item" data-chat-id="direct_budi" id="chatItem-direct_budi">
+          <div class="chat-item" data-chat-id="direct_budi" id="chatItem-direct_budi" role="button" tabindex="0">
             <div class="item-avatar-wrapper">
               <div class="avatar-vector avatar-budi">
             <span class="avatar-monogram" data-avatar="budi" role="img" aria-label="Budi">B</span>
@@ -172,7 +173,7 @@
           </div>
 
           <!-- Item 3: Direct Chat with Rian (Developer Lapangan) -->
-          <div class="chat-item" data-chat-id="direct_rian" id="chatItem-direct_rian">
+          <div class="chat-item" data-chat-id="direct_rian" id="chatItem-direct_rian" role="button" tabindex="0">
             <div class="item-avatar-wrapper">
               <div class="avatar-vector avatar-rian">
             <span class="avatar-monogram" data-avatar="rian" role="img" aria-label="Rian">R</span>
@@ -209,7 +210,7 @@
         <div class="status-list-container">
           <!-- My Status Section -->
           <div class="status-section-header">Status Saya</div>
-          <div class="status-item my-status-item" id="myStatusItem">
+          <div class="status-item my-status-item" id="myStatusItem" role="button" tabindex="0">
             <div class="status-avatar-ring my-status-ring" id="myStatusRing">
               <div class="avatar-vector avatar-bayu">
             <span class="avatar-monogram" data-avatar="bayu" role="img" aria-label="Boss Bayu">B</span>
@@ -897,6 +898,15 @@
           <small class="helper-text">Karakter santai tongkrongan, praktis, setia gaspol perintah Boss Bayu.</small>
         </div>
 
+        <div class="form-group">
+          <label class="enter-send-setting" for="settingEnterSends">
+            <input type="checkbox" id="settingEnterSends">
+            <span><strong>Enter untuk mengirim</strong>
+              <small>Jika nonaktif, Enter membuat baris baru. Shift+Enter selalu baris baru.</small>
+            </span>
+          </label>
+        </div>
+
         <!-- Section 2: Topik Diskusi -->
         <div class="settings-section-header" style="margin-top: 6px;">
           <span class="settings-section-title">Topik diskusi</span>
@@ -967,9 +977,9 @@
           </div>
 
           <div class="vault-tabs">
-            <button type="button" class="vault-tab-btn active" id="tabVaultCodex" data-engine="codex">
+            <span class="vault-tab-btn active" id="tabVaultCodex" data-engine="codex">
               <span class="tab-indicator provider-logo" data-logo="openai"></span> OpenAI Codex
-            </button>
+            </span>
           </div>
 
           <!-- Vault Profile List Container -->

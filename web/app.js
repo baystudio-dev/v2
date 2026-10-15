@@ -36,6 +36,7 @@ const appState = {
   filter: "all",
   attachedFile: null,
   replyingTo: null, // { id, senderName, text }
+  drafts: Object.create(null), // Per-chat drafts stay local until sent
   userHasScrolledUp: false,
   unreadWhileScrolled: 0,
   storyViewer: {
@@ -555,7 +556,17 @@ function shortenModelName(id) {
 // 6. CHAT SWITCHING & RENDERING
 // =========================================================
 function switchChat(chatId) {
+  if (!Object.prototype.hasOwnProperty.call(appState.chats, chatId)) return;
+  const input = document.getElementById("messageInput");
+  const previous = appState.activeChat;
+  if (input && previous !== chatId) {
+    appState.drafts[previous] = input.value;
+  }
   appState.activeChat = chatId;
+  if (input && previous !== chatId) {
+    input.value = appState.drafts[chatId] || "";
+    input.dispatchEvent(new Event("input"));
+  }
   appState.unreads[chatId] = 0;
   cancelReplying();
   closeInchatSearch(true);
@@ -834,6 +845,7 @@ function appendMessageBubble(msg, isFirstInCluster = true) {
   bubble.appendChild(footer);
   row.appendChild(bubble);
   attachSwipeGesture(row, bubble, swipeIcon, msg);
+  attachLongPressMessageMenu(bubble, actionBtn, msg);
   wrap.appendChild(row);
 }
 
@@ -913,13 +925,54 @@ function attachSwipeGesture(row, bubble, swipeIcon, msg) {
   row.addEventListener("touchstart", onTouchStart, { passive: true });
   row.addEventListener("touchmove", onTouchMove, { passive: false });
   row.addEventListener("touchend", onTouchEnd, { passive: true });
-  row.addEventListener("touchcancel", onTouchEnd, { passive: true });
+  row.addEventListener("touchcancel", () => {
+    row.classList.remove("reply-ready");
+    onTouchEnd();
+  }, { passive: true });
 
   // Double click for instant reply on desktop
   bubble.addEventListener("dblclick", () => {
     setReplyingTo(msg);
     const input = document.getElementById("messageInput");
     if (input) input.focus();
+  });
+}
+
+// On touchscreens, hold a bubble to open the same message actions as the
+// chevron. Movement cancels the timer so scroll and swipe-to-reply stay usable.
+function attachLongPressMessageMenu(bubble, actionBtn, msg) {
+  let timer = null, x = 0, y = 0;
+  const cancel = () => {
+    if (timer !== null) clearTimeout(timer);
+    timer = null;
+  };
+  const interactive = target => !!target.closest(
+    "button, a, input, textarea, select, .code-card, .file-card, .vn-player"
+  );
+  bubble.addEventListener("pointerdown", e => {
+    if (e.pointerType !== "touch" || interactive(e.target)) return;
+    cancel();
+    x = e.clientX;
+    y = e.clientY;
+    timer = setTimeout(() => {
+      timer = null;
+      if (window.navigator?.vibrate) {
+        try { navigator.vibrate(12); } catch (_) {}
+      }
+      openBubbleContextMenu({ currentTarget: actionBtn }, msg);
+    }, 450);
+  });
+  bubble.addEventListener("pointermove", e => {
+    if (Math.abs(e.clientX - x) > 10 || Math.abs(e.clientY - y) > 10) cancel();
+  });
+  for (const type of ["pointerup", "pointercancel", "pointerleave"]) {
+    bubble.addEventListener(type, cancel);
+  }
+  bubble.addEventListener("contextmenu", e => {
+    if (interactive(e.target)) return;
+    e.preventDefault();
+    cancel();
+    openBubbleContextMenu({ currentTarget: actionBtn }, msg);
   });
 }
 
@@ -1374,45 +1427,43 @@ function cancelReplying() {
 // =========================================================
 // 8. SEND MESSAGE & FILE ATTACHMENTS
 // =========================================================
-async function sendMessage(text) {
+// Never clear a draft or quote until the backend acknowledges a write.
+async function sendMessage(text, chatId = appState.activeChat) {
   const trimmed = text.trim();
-  if (!trimmed && !appState.attachedFile) return;
-
-  const currentQuoted = appState.replyingTo ? { ...appState.replyingTo } : null;
-  cancelReplying();
-
-  if (appState.attachedFile) {
-    try {
-      await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filename: appState.attachedFile.name,
-          contentBase64: appState.attachedFile.base64,
-          caption: trimmed,
-          chatId: appState.activeChat,
-          quoted: currentQuoted
-        })
-      });
-      clearAttachmentPreview();
-    } catch (err) {
-      console.error("Upload error:", err);
-    }
-    return;
-  }
-
+  const attached = appState.activeChat === chatId ? appState.attachedFile : null;
+  if (!trimmed && !attached) return false;
+  const quoted = appState.activeChat === chatId && appState.replyingTo
+    ? { ...appState.replyingTo } : null;
   try {
-    await fetch("/api/message", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        text: trimmed,
-        chatId: appState.activeChat,
-        quoted: currentQuoted
-      })
-    });
+    const response = attached
+      ? await fetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            filename: attached.name,
+            contentBase64: attached.base64,
+            caption: trimmed,
+            chatId,
+            quoted
+          })
+        })
+      : await fetch("/api/message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: trimmed, chatId, quoted })
+        });
+    const receipt = await response.json().catch(() => ({}));
+    if (!response.ok || receipt.success === false) {
+      throw new Error(receipt.error || ("HTTP " + response.status));
+    }
+    if (attached && appState.attachedFile === attached) clearAttachmentPreview();
+    if (quoted && appState.activeChat === chatId &&
+        appState.replyingTo?.id === quoted.id) cancelReplying();
+    return true;
   } catch (err) {
-    console.error("Send message error:", err);
+    console.error("Message delivery failed:", err);
+    showToast("Pesan belum terkirim. Ketikan tetap disimpan, coba lagi.");
+    return false;
   }
 }
 
@@ -1483,6 +1534,14 @@ function renderStatusTimeline() {
     const el = document.createElement("div");
     el.className = "status-item";
     el.onclick = () => openStoryViewer("contacts", index);
+    el.setAttribute("role", "button");
+    el.tabIndex = 0;
+    el.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        el.click();
+      }
+    });
 
     const isBudi = item.author === "budi";
     const avatarMarkup = isBudi ? SVG_ICONS.budi : SVG_ICONS.rian;
@@ -2109,6 +2168,12 @@ document.addEventListener("DOMContentLoaded", () => {
     item.addEventListener("click", () => {
       switchChat(item.dataset.chatId);
     });
+    item.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        item.click();
+      }
+    });
   });
 
   // Mobile Back Button
@@ -2167,22 +2232,61 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   updateInputButtonsState();
 
-  // Enter to send, Shift+Enter for new line
-  messageInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  // WhatsApp Android: Enter is configurable. Default newline on mobile;
+  // desktop defaults to send. Never submit during an IME composition.
+  const mobileKeyboard = /Android/i.test(navigator.userAgent) ||
+    typeof window.AndroidBridge !== "undefined";
+  let enterSends = !mobileKeyboard;
+  try {
+    const stored = localStorage.getItem("wa-agent-enter-sends-v1");
+    if (stored === "true" || stored === "false") enterSends = stored === "true";
+  } catch (_) { /* setting remains usable without storage */ }
+  const enterSetting = document.getElementById("settingEnterSends");
+  if (enterSetting) {
+    enterSetting.checked = enterSends;
+    enterSetting.addEventListener("change", () => {
+      enterSends = enterSetting.checked;
+      try { localStorage.setItem("wa-agent-enter-sends-v1", String(enterSends)); }
+      catch (_) {}
+    });
+  }
+
+  messageInput.addEventListener("input", () => {
+    appState.drafts[appState.activeChat] = messageInput.value;
+  });
+
+  messageInput.addEventListener("keydown", e => {
+    if (e.key !== "Enter" || e.isComposing || e.keyCode === 229) return;
+    if (e.shiftKey) return; // Shift+Enter always inserts a newline.
+    if (e.ctrlKey || e.metaKey || enterSends) {
       e.preventDefault();
-      document.getElementById("chatInputForm").dispatchEvent(new Event("submit"));
+      document.getElementById("chatInputForm").requestSubmit();
     }
   });
 
-  // Chat Input Form Submit
-  document.getElementById("chatInputForm").addEventListener("submit", (e) => {
+  let messageSubmissionPending = false;
+  document.getElementById("chatInputForm").addEventListener("submit", async e => {
     e.preventDefault();
+    if (messageSubmissionPending) return;
+    const originChat = appState.activeChat;
     const text = messageInput.value;
-    sendMessage(text);
-    messageInput.value = "";
-    messageInput.style.height = "auto";
-    messageInput.dispatchEvent(new Event("input"));
+    if (!text.trim() && !appState.attachedFile) return;
+    messageSubmissionPending = true;
+    btnSendMessage.disabled = true;
+    try {
+      const delivered = await sendMessage(text, originChat);
+      if (delivered) {
+        if (appState.drafts[originChat] === text) appState.drafts[originChat] = "";
+        if (appState.activeChat === originChat && messageInput.value === text) {
+          messageInput.value = "";
+          messageInput.style.height = "auto";
+          messageInput.dispatchEvent(new Event("input"));
+        }
+      }
+    } finally {
+      messageSubmissionPending = false;
+      btnSendMessage.disabled = false;
+    }
   });
 
   // Voice Recording Mic Button Click
@@ -2613,12 +2717,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const modelB = document.getElementById("selectModelB").value;
     const topic = document.getElementById("inputTopicSettings").value.trim();
 
+    const saveButton = document.getElementById("btnSaveSettings");
+    saveButton.disabled = true;
     fetch("/api/config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ modelA, modelB, topic })
-    }).then(() => {
+    }).then(async response => {
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.success === false) {
+        throw new Error(result.error || "HTTP " + response.status);
+      }
       document.getElementById("settingsModal").style.display = "none";
+      showToast("Pengaturan tersimpan.");
+    }).catch(error => {
+      showToast("Pengaturan belum tersimpan: " + error.message);
+    }).finally(() => {
+      saveButton.disabled = false;
     });
   });
 
@@ -2683,7 +2798,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.AndroidBridge && window.AndroidBridge.toggleTerminal) {
       window.AndroidBridge.toggleTerminal("alpine");
     } else {
-      showToast("Terminal overlay aktif dalam mode Native Android.");
+      openTerminalModal();
+      showToast("Terminal native hanya tersedia dalam APK Android.");
     }
   });
   document.getElementById("btnCheckKadb")?.addEventListener("click", () => {
@@ -2706,7 +2822,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Dedicated Terminal Buttons (Header, Nav Rail, Dropdown Menu)
   document.getElementById("btnHeaderTerminal")?.addEventListener("click", openTerminalModal);
-  document.getElementById("tabTerminal")?.addEventListener("click", openTerminalModal);
   document.getElementById("menuItemTerminal")?.addEventListener("click", () => {
     const dropdown = document.getElementById("chatMenuDropdown");
     if (dropdown) dropdown.style.display = "none";
@@ -2727,7 +2842,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const next = data.active === "ubuntu" ? "alpine" : "ubuntu";
       await switchWorkstation(next);
       updateTerminalWorkstationHeader();
-    } catch (_) {}
+    } catch (error) {
+      showToast("Gagal memeriksa workstation: " + error.message);
+    }
   });
   document.querySelectorAll(".btn-quick-term").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -2811,6 +2928,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  for (const accessibleControl of [userProfileBadge, document.getElementById("myStatusItem")]) {
+    accessibleControl?.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        accessibleControl.click();
+      }
+    });
+  }
+
   // Dismiss context menu on stream scroll
   const chatStreamEl = document.getElementById("chatStream");
   if (chatStreamEl) {
@@ -2840,25 +2966,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Global Escape key handler to close any active modal
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      const settingsModal = document.getElementById("settingsModal");
-      if (settingsModal && settingsModal.style.display === "flex") {
-        settingsModal.style.display = "none";
-      }
-      const addModal = document.getElementById("addProfileModal");
-      if (addModal && addModal.style.display === "flex") {
-        const btnCancelAddProfile = document.getElementById("btnCancelAddProfile");
-        if (btnCancelAddProfile) btnCancelAddProfile.click();
-        else addModal.style.display = "none";
-      }
-      const chatInfoModal = document.getElementById("chatInfoModal");
-      if (chatInfoModal && chatInfoModal.style.display === "flex") {
-        chatInfoModal.style.display = "none";
-      }
+  // Escape follows the same layered behavior as the Android system Back key.
+  window.addEventListener("keydown", e => {
+    if (e.key === "Escape" && window.WhatsAppAgentBack?.()) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
     }
-  });
+  }, true);
 
   hydrateProviderLogos();
   setupAuthVaultListeners();
@@ -2866,6 +2980,51 @@ document.addEventListener("DOMContentLoaded", () => {
   // Connect Realtime SSE Stream
   connectSSE();
 });
+
+// Called by the Android Activity when the keyboard is already hidden.
+// Never silently terminate a current call or submit any pending message.
+window.WhatsAppAgentBack = function () {
+  const visible = el => !!el && getComputedStyle(el).display !== "none";
+  const overlayPairs = [
+    ["antigravityInstallModal", "btnCloseAntigravityInstall"],
+    ["legalModal", "btnCloseLegal"],
+    ["addProfileModal", "btnCancelAddProfile"],
+    ["snippetModal", "btnCancelSnippet"],
+    ["chatInfoModal", "btnCloseChatInfo"],
+    ["settingsModal", "btnCloseSettings"],
+    ["terminalModal", "btnCloseTerminalModal"],
+    ["statusStoryViewerModal", "btnCloseStoryViewer"]
+  ];
+  for (const [id, closeId] of overlayPairs) {
+    const overlay = document.getElementById(id);
+    if (visible(overlay)) {
+      const btn = document.getElementById(closeId);
+      if (btn) btn.click();
+      else overlay.style.display = "none";
+      return true;
+    }
+  }
+  const popovers = ["bubbleContextMenu", "emojiDrawer", "attachPopupMenu", "chatMenuDropdown"];
+  for (const id of popovers) {
+    const popup = document.getElementById(id);
+    if (visible(popup)) {
+      if (id === "bubbleContextMenu") closeBubbleContextMenu();
+      else popup.style.display = "none";
+      return true;
+    }
+  }
+  const search = document.getElementById("inchatSearchBar");
+  if (visible(search)) {
+    closeInchatSearch();
+    return true;
+  }
+  const chat = document.getElementById("chatMain");
+  if (window.innerWidth <= 768 && chat?.classList.contains("mobile-open")) {
+    chat.classList.remove("mobile-open");
+    return true;
+  }
+  return false;
+};
 
 function populateSettingsModal() {
   const selA = document.getElementById("selectModelA");

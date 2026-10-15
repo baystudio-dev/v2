@@ -11,6 +11,10 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ScrollView
 import android.widget.TextView
+import android.view.View
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.bossbayu.aiteam.R
 import com.bossbayu.aiteam.runtime.PRootManager
 import com.bossbayu.aiteam.runtime.WorkstationManager
@@ -35,8 +39,31 @@ class TerminalOverlayDialog(
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window?.let { WindowCompat.setDecorFitsSystemWindows(it, false) }
         setContentView(R.layout.dialog_terminal)
         window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        // A fullscreen dialog must still respect gesture navigation and the IME.
+        val content = findViewById<View>(android.R.id.content)
+        if (content != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(content) { view, insets ->
+                val bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+                )
+                val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+                val bottom = if (insets.isVisible(WindowInsetsCompat.Type.ime())) {
+                    maxOf(bars.bottom, ime.bottom)
+                } else {
+                    bars.bottom
+                }
+                if (view.paddingLeft != bars.left || view.paddingTop != bars.top ||
+                    view.paddingRight != bars.right || view.paddingBottom != bottom
+                ) {
+                    view.setPadding(bars.left, bars.top, bars.right, bottom)
+                }
+                WindowInsetsCompat.CONSUMED
+            }
+            ViewCompat.requestApplyInsets(content)
+        }
 
         tvTitle = findViewById(R.id.tvTerminalTitle)
         tvOutput = findViewById(R.id.tvTerminalOutput)

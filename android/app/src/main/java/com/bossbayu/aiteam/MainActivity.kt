@@ -8,6 +8,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -29,7 +32,6 @@ import com.bossbayu.aiteam.runtime.PRootManager
 import com.bossbayu.aiteam.runtime.WorkstationManager
 import com.bossbayu.aiteam.service.EngineForegroundService
 import com.bossbayu.aiteam.terminal.TerminalOverlayDialog
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -42,12 +44,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var loadingOverlay: LinearLayout
     private lateinit var tvLoadingStatus: TextView
-    private lateinit var fabTerminal: FloatingActionButton
 
     private lateinit var workstationManager: WorkstationManager
     private lateinit var prootManager: PRootManager
 
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+    private var nativeBackDispatchPending = false
 
     private val filePickerLauncher = registerForActivityResult(
         ActivityResultContracts.GetMultipleContents()
@@ -64,19 +66,25 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Target SDK 36 draws behind system bars; reserve actual system/keyboard
+        // insets in the native parent rather than guessing status/nav bar heights in CSS.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
         setContentView(R.layout.activity_main)
+        applySystemBarAndImeInsets()
 
         webView = findViewById(R.id.webView)
         loadingOverlay = findViewById(R.id.loadingOverlay)
         tvLoadingStatus = findViewById(R.id.tvLoadingStatus)
-        fabTerminal = findViewById(R.id.fabTerminal)
 
         workstationManager = WorkstationManager(this)
         prootManager = PRootManager(this)
 
         requestRequiredPermissions()
         setupWebView()
-        setupTerminalFab()
         setupBackHandler()
 
         val bootstrapInstaller = BootstrapInstaller(this)
@@ -106,6 +114,30 @@ class MainActivity : AppCompatActivity() {
             startEngineService()
             waitForServerAndLoad()
         }
+    }
+
+    private fun applySystemBarAndImeInsets() {
+        val root = findViewById<View>(R.id.rootLayout)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { target, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val bottom = if (insets.isVisible(WindowInsetsCompat.Type.ime())) {
+                maxOf(bars.bottom, ime.bottom)
+            } else {
+                bars.bottom
+            }
+            if (target.paddingLeft != bars.left || target.paddingTop != bars.top ||
+                target.paddingRight != bars.right || target.paddingBottom != bottom
+            ) {
+                target.setPadding(bars.left, bars.top, bars.right, bottom)
+            }
+            // The child WebView already resides inside the protected content area.
+            // Do not let it or the embedded CSS apply the same native inset twice.
+            WindowInsetsCompat.CONSUMED
+        }
+        ViewCompat.requestApplyInsets(root)
     }
 
     private fun requestRequiredPermissions() {
@@ -272,23 +304,47 @@ class MainActivity : AppCompatActivity() {
             }.show()
     }
 
-    private fun setupTerminalFab() {
-        fabTerminal.setOnClickListener {
-            showTerminalOverlay("alpine")
-        }
-    }
-
     private fun setupBackHandler() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (webView.canGoBack()) {
-                    webView.goBack()
-                } else {
-                    // Send to background instead of destroying so service stays active
-                    moveTaskToBack(true)
+                val content = findViewById<View>(R.id.rootLayout)
+                val insets = ViewCompat.getRootWindowInsets(content)
+                if (insets?.isVisible(WindowInsetsCompat.Type.ime()) == true) {
+                    // First Back hides Gboard/IME; leave the typed draft untouched.
+                    WindowCompat.getInsetsController(window, content)
+                        .hide(WindowInsetsCompat.Type.ime())
+                    return
+                }
+                if (nativeBackDispatchPending) return
+                if (!isLocalAppUrl(webView.url)) {
+                    navigateBackOrBackground()
+                    return
+                }
+                nativeBackDispatchPending = true
+                try {
+                    webView.evaluateJavascript(
+                        "(function(){return !!(window.WhatsAppAgentBack && window.WhatsAppAgentBack());})()"
+                    ) { handled ->
+                        nativeBackDispatchPending = false
+                        if (handled != "true" && !isFinishing && !isDestroyed) {
+                            navigateBackOrBackground()
+                        }
+                    }
+                } catch (_: Exception) {
+                    nativeBackDispatchPending = false
+                    navigateBackOrBackground()
                 }
             }
         })
+    }
+
+    private fun navigateBackOrBackground() {
+        if (webView.canGoBack()) {
+            webView.goBack()
+        } else {
+            // Keep local engines alive if the user exits the main chat screen.
+            moveTaskToBack(true)
+        }
     }
 
     private fun waitForServerAndLoad() {

@@ -1,0 +1,214 @@
+/* Mobile touch/safe-area hardening. Native Android reserves the OS bars and IME
+   in the WebView parent; do not apply them again inside the web shell. */
+html, body {
+  width: 100%;
+  height: 100%;
+  overscroll-behavior: none;
+}
+.wa-app {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  min-height: 0;
+  max-height: 100%;
+}
+@media (max-width: 768px) {
+  .wa-app {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .nav-rail {
+    flex: 0 0 62px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: 62px;
+    min-height: 62px;
+    padding: 4px 6px;
+    gap: 0;
+    box-sizing: border-box;
+  }
+  .nav-top,
+  .nav-bottom {
+    flex-direction: row;
+    min-width: 0;
+    gap: 0;
+    align-items: center;
+  }
+  .nav-top { flex: 1 1 auto; justify-content: space-around; }
+  .nav-bottom { flex: 0 0 auto; justify-content: flex-end; }
+  .nav-btn {
+    width: 44px;
+    min-width: 38px;
+    max-width: 48px;
+    height: 48px;
+    min-height: 44px;
+    flex: 0 1 44px;
+    padding: 5px;
+  }
+  .nav-bottom .user-profile-badge {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    margin-inline: 2px;
+    flex-shrink: 0;
+  }
+  .sidebar-panel {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .sidebar-view { min-height: 0; }
+  .chat-main {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    min-height: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .chat-main.mobile-open {
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .chat-header {
+    flex: 0 0 auto;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0 8px;
+    gap: 5px;
+  }
+  .chat-header-left { min-width: 0; flex: 1 1 auto; }
+  .chat-header-right { flex: 0 0 auto; gap: 1px; }
+  .chat-header-right .btn-header-action {
+    width: 36px;
+    height: 40px;
+    min-width: 36px;
+  }
+  .chat-stream { flex: 1 1 0; min-height: 0; }
+  .chat-input-bar {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    padding: 8px 10px;
+    gap: 5px;
+  }
+  .chat-input-bar .input-form,
+  .chat-input-bar .input-box { min-width: 0; }
+  .chat-input-bar .tool-btn { width: 44px; min-width: 44px; }
+  /* Root layout already applies navigation-bar/IME padding on Android. */
+  .modal-overlay,
+  .incoming-call-modal {
+    inset: 0;
+    max-height: 100%;
+    overflow: hidden;
+    padding: 8px;
+  }
+  .modal-box {
+    max-height: calc(100dvh - 16px);
+    min-height: 0;
+  }
+  .modal-box-body {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  #antigravityInstallModal .modal-box {
+    max-height: calc(100dvh - 16px);
+  }
+}
+@media (max-width: 420px) {
+  /* Seven separate navigation actions must not overlap on narrow phones. */
+  .nav-label { display: none; }
+  .nav-btn { width: 40px; min-width: 36px; flex-basis: 40px; }
+}
+@media (max-width: 350px) {
+  .nav-rail { padding-inline: 2px; }
+  .nav-btn { width: 36px; min-width: 32px; flex-basis: 36px; }
+  .nav-bottom .user-profile-badge { width: 32px; min-width: 32px; height: 32px; }
+}
+
+/* Terminal modal: at 320px its single-line title and actions previously
+   pushed the close button outside the touchable viewport. */
+#terminalModal .modal-box {
+  min-width: 0;
+  width: min(95%, 760px) !important;
+  max-height: calc(100dvh - 16px);
+}
+#terminalModal .modal-box-header {
+  height: auto;
+  min-height: 56px;
+  padding: 8px 10px !important;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#terminalModal .modal-box-header > div:first-child {
+  flex: 1 1 130px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+#terminalModal .modal-box-header > div:last-child {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px !important;
+}
+#terminalModal .modal-box-header #terminalModalTitle {
+  min-width: 0;
+  font-size: 13px !important;
+  overflow-wrap: anywhere;
+}
+#terminalModal .modal-box-header .btn,
+#terminalModal .modal-box-header .btn-close-modal { min-height: 36px; }
+#terminalModal #inputTerminalCmd { min-width: 0; }
+
+/* Enter preference: full-row label and adequate touch target. */
+.enter-send-setting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  cursor: pointer;
+}
+.enter-send-setting input { flex: 0 0 18px; width: 18px; height: 18px; accent-color: var(--wa-teal, #00a884); }
+.enter-send-setting span { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.enter-send-setting small { font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+
+/* Hidden controls should not intercept pointer events; touch controls are
+   never visually shrunk to zero on the current active panel. */
+.send-mic-wrap:not(.has-text) #btnSendMessage,
+.send-mic-wrap.has-text #btnMic { pointer-events: none; }
+.send-mic-wrap.has-text #btnSendMessage { pointer-events: auto; }
+
+@media (max-width: 768px) {
+  .chat-header .btn-back-mobile { min-width: 40px; min-height: 44px; }
+  #terminalModal .modal-box { height: min(85dvh, calc(100dvh - 16px)) !important; }
+}
+
+/* Tablet/landscape: keep the composer and Send entirely inside the chat pane. */
+.chat-input-bar,
+.chat-input-bar .input-form,
+.chat-input-bar .input-box,
+.chat-main { min-width: 0; }
+.chat-input-bar .input-form { flex: 1 1 0; }
+.chat-input-bar .input-box { flex: 1 1 0; }
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar-panel {
+    width: clamp(240px, 30vw, 320px);
+    min-width: 240px;
+  }
+  .chat-input-bar { gap: 6px; padding: 8px 10px; }
+}

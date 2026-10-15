@@ -1,5 +1,14 @@
 # SESSION HANDOFF • WhatsApp Agent V2
 
+## NEW 2026-10-16 • Mobile keyboard/touch and Android system bars
+- Parent `78682e1` ARM64 PRoot fix preserved. New worktree `/home/sprite/v2-mobile-insets-qa-20261016`, branch `fix/mobile-insets-and-interactions-20261016`; original private worktrees, PR #1 and main unchanged.
+- Fixed native SDK36 system/IME insets, removed native FAB overlapping chat send, protected WebView layout in portrait/landscape, and fixed terminal Close on compact screens.
+- WhatsApp research: Android Enter-to-send setting, voice note gestures, and WhatsApp Web keyboard shortcuts. Added configurable Enter, IME composition guard, per-room drafts, acknowledged delivery, touch-hold message menu, safe Back stack and keyboard-accessible chat controls. No voice-media or E2EE parity claims.
+- Browser harness passes five screen configurations (320x685, 360x740, 390x796, 412x860, 844x390); 142/142 local source QA green. See `checkpoints/CP16/WHATSAPP_MOBILE_INTERACTIONS_20261016.md`.
+- Android ARM64 Gradle lintDebug+assembleDebug BUILD SUCCESSFUL in 3m 5s; 57 tasks, 4 existing nonfatal Kotlin warnings. New debug APK SHA-256 `131bd78c068922cc648c8c7805d64f092c8c4850b8626deb5ef4b7fde6024a66`; signed with same debug certificate as prior test APK. PRoot native APK payload static validation PASS. No /dev/kvm or connected physical device; actual touch/IME and PRoot agent execution remain unverified.
+- Preserve all source changes in this new worktree, commit only after tests and native linker archive inspection; do not reset other worktrees or uninstall existing APK.
+
+
 
 ## LATEST CP16 ARM64 native linker candidate • 2026-10-16
 - User screenshot from real Android ARM64 shows `libproot_exec.so` dynamic linker failure for `talloc_enable_leak_report`. Switching models cannot fix that failure; no provider execution occurred.
