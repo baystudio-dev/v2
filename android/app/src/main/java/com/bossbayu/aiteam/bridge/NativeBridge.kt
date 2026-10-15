@@ -194,6 +194,14 @@ class NativeBridge(
         return kadbManager.getStatusJson()
     }
 
+    @JavascriptInterface
+    fun getAntigravityInstallStatus(): String = activity.getAntigravityInstallStatus()
+
+    @JavascriptInterface
+    fun openAntigravityInstaller() {
+        activity.runOnUiThread { activity.showAntigravityInstaller() }
+    }
+
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             NOTIFICATION_CHANNEL_MESSAGES,

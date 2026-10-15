@@ -20,6 +20,9 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
+import org.json.JSONObject
+import java.io.File
 import androidx.core.content.ContextCompat
 import com.bossbayu.aiteam.runtime.BootstrapInstaller
 import com.bossbayu.aiteam.runtime.PRootManager
@@ -187,7 +190,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val url = request?.url?.toString() ?: ""
-                if (url.startsWith("http://127.0.0.1:3000") || url.startsWith("http://localhost:3000")) {
+                if (isLocalAppUrl(url)) {
                     return false
                 }
                 // Open external links (e.g. OpenAI / Google device auth) in external browser
@@ -204,6 +207,69 @@ class MainActivity : AppCompatActivity() {
         workstationManager.switchWorkstation(sessionType)
         val dialog = TerminalOverlayDialog(this, workstationManager, prootManager)
         dialog.show()
+    }
+
+    private fun isLocalAppUrl(url: String?): Boolean {
+        val uri = url?.let(Uri::parse) ?: return false
+        return uri.scheme == "http" && uri.port == 3000 && uri.userInfo == null &&
+            (uri.host == "127.0.0.1" || uri.host == "localhost")
+    }
+
+    fun getAntigravityInstallStatus(): String {
+        val state = when {
+            !workstationManager.isUbuntuInstalled() -> "requires_ubuntu"
+            !prootManager.isPRootInstalled() ||
+                !com.bossbayu.aiteam.runtime.RootfsShellValidator.hasShell(workstationManager.ubuntuDir) -> "runtime_unavailable"
+            File(workstationManager.ubuntuDir, "root/.local/bin/agy").isFile -> "binary_found"
+            else -> "not_installed"
+        }
+        return JSONObject().apply {
+            put("state", state)
+            put("canInstall", state == "not_installed" || state == "binary_found")
+            put("integrationEnabled", false)
+        }.toString()
+    }
+
+    fun showAntigravityInstaller() {
+        // Native confirmation remains mandatory even if a WebView frame calls the bridge.
+        if (isFinishing || isDestroyed || !isLocalAppUrl(webView.url)) return
+        val status = JSONObject(getAntigravityInstallStatus())
+        if (!status.optBoolean("canInstall")) {
+            AlertDialog.Builder(this)
+                .setTitle("Ubuntu belum siap")
+                .setMessage("Antigravity memerlukan shell Ubuntu dan PRoot yang kompatibel. Installer Ubuntu pada build ini belum diaktifkan. Tidak ada perintah yang dijalankan di Alpine.")
+                .setPositiveButton("Mengerti", null).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Siapkan instalasi Antigravity?")
+            .setMessage("Terminal Ubuntu akan dibuka dengan perintah unduhan resmi Google. Tinjau perintah, lalu tekan kirim untuk menjalankan. Login dan integrasi agent tidak diaktifkan. Lingkungan utama tidak akan diganti.")
+            .setNegativeButton("Batal", null)
+            .setPositiveButton("Buka terminal") { _, _ ->
+                if (!JSONObject(getAntigravityInstallStatus()).optBoolean("canInstall")) return@setPositiveButton
+                try {
+                    val script = assets.open("web/antigravity-install.sh").bufferedReader().use { it.readText() }
+                    check(script.startsWith("#!/bin/sh\n") && script.length <= 7000)
+                    val command = "/bin/sh -c '" + script.replace("'", "'\\''") + "'"
+                    check(command.length <= 8192)
+                    val dialog = TerminalOverlayDialog(
+                        this, workstationManager, prootManager,
+                        requestedRootfs = workstationManager.ubuntuDir,
+                        initialCommand = command,
+                        workstationLabel = "Ubuntu · Antigravity"
+                    )
+                    dialog.setOnDismissListener {
+                        if (!isDestroyed && isLocalAppUrl(webView.url)) {
+                            webView.evaluateJavascript("window.dispatchEvent(new Event('antigravity:refresh'))", null)
+                        }
+                    }
+                    dialog.show()
+                } catch (_: Exception) {
+                    AlertDialog.Builder(this).setTitle("Terminal belum dapat dibuka")
+                        .setMessage("Perintah instalasi atau runtime tidak tersedia. Tidak ada instalasi yang dijalankan.")
+                        .setPositiveButton("Mengerti", null).show()
+                }
+            }.show()
     }
 
     private fun setupTerminalFab() {

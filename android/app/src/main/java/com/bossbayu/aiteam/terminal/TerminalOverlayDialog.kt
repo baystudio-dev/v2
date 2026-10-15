@@ -3,6 +3,7 @@ package com.bossbayu.aiteam.terminal
 import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
+import java.io.File
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
@@ -20,7 +21,10 @@ import com.bossbayu.aiteam.runtime.WorkstationManager
 class TerminalOverlayDialog(
     context: Context,
     private val workstationManager: WorkstationManager,
-    private val prootManager: PRootManager
+    private val prootManager: PRootManager,
+    private val requestedRootfs: File? = null,
+    private val initialCommand: String? = null,
+    private val workstationLabel: String? = null
 ) : Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen) {
 
     private lateinit var tvOutput: TextView
@@ -43,7 +47,11 @@ class TerminalOverlayDialog(
         val btnClose = findViewById<Button>(R.id.btnTerminalClose)
         val btnSend = findViewById<ImageButton>(R.id.btnTerminalSend)
 
-        tvTitle.text = "Terminal Workstation (${workstationManager.currentWorkstation.uppercase()})"
+        tvTitle.text = "Terminal Workstation (${workstationLabel ?: workstationManager.currentWorkstation.uppercase()})"
+        initialCommand?.let {
+            etCommand.setText(it)
+            tvOutput.text = "Perintah instalasi disiapkan, belum dijalankan. Tinjau lalu tekan kirim untuk memulai. Tutup terminal untuk membatalkan.\n"
+        }
 
         btnClear.setOnClickListener {
             tvOutput.text = ""
@@ -90,7 +98,7 @@ class TerminalOverlayDialog(
 
     private fun startTerminal() {
         val feedbackManager = TerminalFeedbackManager(context)
-        terminalSession = TerminalSession(workstationManager, prootManager, feedbackManager) { text ->
+        terminalSession = TerminalSession(workstationManager, prootManager, feedbackManager, requestedRootfs) { text ->
             tvOutput.post {
                 tvOutput.append(text)
                 scrollTerminal.fullScroll(ScrollView.FOCUS_DOWN)

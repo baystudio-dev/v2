@@ -67,206 +67,21 @@ const appState = {
 };
 
 // =========================================================
-// 2. VECTOR SVG ASSETS (Handcrafted Vector Character Portraits & Authentic WhatsApp Web Icons)
+// 2. BUILT-IN MONOGRAMS & INTERFACE SVG ICONS
 // =========================================================
-const SVG_PORTRAITS = {
-  bayu: `<svg viewBox="0 0 100 100" width="100%" height="100%">
-  <defs>
-    <linearGradient id="bayu-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0c3832"/>
-      <stop offset="100%" stop-color="#005c4b"/>
-    </linearGradient>
-    <linearGradient id="bayu-skin" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#fedac2"/>
-      <stop offset="100%" stop-color="#f3b78c"/>
-    </linearGradient>
-    <linearGradient id="bayu-hair" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#1f2421"/>
-      <stop offset="100%" stop-color="#111613"/>
-    </linearGradient>
-    <linearGradient id="bayu-suit" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#202c33"/>
-      <stop offset="100%" stop-color="#111b21"/>
-    </linearGradient>
-    <linearGradient id="bayu-crown" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24"/>
-      <stop offset="100%" stop-color="#d97706"/>
-    </linearGradient>
-  </defs>
-  <circle cx="50" cy="50" r="50" fill="url(#bayu-bg)"/>
-  <circle cx="50" cy="40" r="28" fill="#00a884" opacity="0.18"/>
-  <path d="M22 98 C24 78 35 70 50 70 C65 70 76 78 78 98 Z" fill="url(#bayu-suit)"/>
-  <path d="M42 70 L50 82 L58 70 Z" fill="#005c4b"/>
-  <path d="M44 64 H56 V72 C56 75.5 53.5 78 50 78 C46.5 78 44 75.5 44 72 Z" fill="#182229"/>
-  <path d="M43 54 H57 V66 C57 69 54 71 50 71 C46 71 43 69 43 66 Z" fill="url(#bayu-skin)"/>
-  <ellipse cx="31" cy="48" rx="4" ry="6.5" fill="#f3b78c"/>
-  <ellipse cx="69" cy="48" rx="4" ry="6.5" fill="#f3b78c"/>
-  <path d="M33 42 C33 28 40 24 50 24 C60 24 67 28 67 42 C67 56 60 64 50 64 C40 64 33 56 33 42 Z" fill="url(#bayu-skin)"/>
-  <path d="M31 38 C30 26 38 15 50 15 C60 15 69 22 69 34 C69 37 67 36 65 33 C61 27 54 24 46 25 C38 26 34 32 32 38 Z" fill="url(#bayu-hair)"/>
-  <path d="M32 35 L33 44 L36 41 Z" fill="url(#bayu-hair)"/>
-  <path d="M68 35 L67 44 L64 41 Z" fill="url(#bayu-hair)"/>
-  <path d="M37 38 Q43 36 47 38" stroke="#1f2421" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-  <path d="M53 38 Q57 36 63 38" stroke="#1f2421" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-  <rect x="35" y="40" width="13" height="9" rx="3" fill="#ffffff" fill-opacity="0.12" stroke="#2a3942" stroke-width="1.8"/>
-  <rect x="52" y="40" width="13" height="9" rx="3" fill="#ffffff" fill-opacity="0.12" stroke="#2a3942" stroke-width="1.8"/>
-  <line x1="48" y1="44" x2="52" y2="44" stroke="#2a3942" stroke-width="1.8"/>
-  <line x1="37" y1="42" x2="40" y2="47" stroke="#ffffff" stroke-width="1.2" opacity="0.45" stroke-linecap="round"/>
-  <line x1="54" y1="42" x2="57" y2="47" stroke="#ffffff" stroke-width="1.2" opacity="0.45" stroke-linecap="round"/>
-  <circle cx="41.5" cy="44.5" r="1.8" fill="#111b21"/>
-  <circle cx="58.5" cy="44.5" r="1.8" fill="#111b21"/>
-  <path d="M50 44 L49 51 H52" stroke="#df9f78" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M44 55 Q50 59 56 55" stroke="#a2553b" stroke-width="1.8" stroke-linecap="round" fill="none"/>
-  <circle cx="77" cy="77" r="13" fill="#111b21" stroke="#202c33" stroke-width="2"/>
-  <path d="M77 69 L79.5 74.5 L85 75.2 L81 79 L82 84.5 L77 81.8 L72 84.5 L73 79 L69 75.2 L74.5 74.5 Z" fill="url(#bayu-crown)"/>
-</svg>`,
-
-  budi: `<svg viewBox="0 0 100 100" width="100%" height="100%">
-  <defs>
-    <linearGradient id="budi-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0a2a42"/>
-      <stop offset="100%" stop-color="#0284c7"/>
-    </linearGradient>
-    <linearGradient id="budi-skin" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffeedb"/>
-      <stop offset="100%" stop-color="#f5caa6"/>
-    </linearGradient>
-    <linearGradient id="budi-hair" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#2c1d11"/>
-      <stop offset="100%" stop-color="#180e07"/>
-    </linearGradient>
-    <linearGradient id="budi-polo" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#0f2b48"/>
-      <stop offset="100%" stop-color="#08182b"/>
-    </linearGradient>
-    <linearGradient id="budi-badge" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="100%" stop-color="#0284c7"/>
-    </linearGradient>
-  </defs>
-  <circle cx="50" cy="50" r="50" fill="url(#budi-bg)"/>
-  <circle cx="50" cy="42" r="28" fill="#38bdf8" opacity="0.14"/>
-  <path d="M22 98 C24 76 34 68 50 68 C66 68 76 76 78 98 Z" fill="url(#budi-polo)"/>
-  <path d="M40 68 L50 78 L47 88 L40 68 Z" fill="#1b4570"/>
-  <path d="M60 68 L50 78 L53 88 L60 68 Z" fill="#1b4570"/>
-  <path d="M47 80 H53 V94 H47 Z" fill="#0f2b48"/>
-  <circle cx="50" cy="85" r="1.2" fill="#38bdf8"/>
-  <path d="M43 52 H57 V65 C57 68 54 70 50 70 C46 70 43 68 43 65 Z" fill="url(#budi-skin)"/>
-  <ellipse cx="32" cy="46" rx="3.8" ry="6" fill="#f5caa6"/>
-  <ellipse cx="68" cy="46" rx="3.8" ry="6" fill="#f5caa6"/>
-  <path d="M34 40 C34 27 41 23 50 23 C59 23 66 27 66 40 C66 54 59 62 50 62 C41 62 34 54 34 40 Z" fill="url(#budi-skin)"/>
-  <path d="M32 36 C31 24 38 16 50 16 C61 16 68 22 67 33 C65 31 60 27 51 27 C42 27 35 30 32 36 Z" fill="url(#budi-hair)"/>
-  <path d="M39 19 Q48 24 64 29" stroke="#3d2a1c" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-  <path d="M37 36 Q42 34 46 36" stroke="#2c1d11" stroke-width="2" stroke-linecap="round" fill="none"/>
-  <path d="M54 36 Q58 34 63 36" stroke="#2c1d11" stroke-width="2" stroke-linecap="round" fill="none"/>
-  <circle cx="42" cy="43" r="6.8" fill="#ffffff" fill-opacity="0.12" stroke="#38bdf8" stroke-width="1.6"/>
-  <circle cx="58" cy="43" r="6.8" fill="#ffffff" fill-opacity="0.12" stroke="#38bdf8" stroke-width="1.6"/>
-  <line x1="48.8" y1="43" x2="51.2" y2="43" stroke="#38bdf8" stroke-width="1.6"/>
-  <line x1="39" y1="40" x2="42" y2="45" stroke="#ffffff" stroke-width="1.2" opacity="0.6" stroke-linecap="round"/>
-  <line x1="55" y1="40" x2="58" y2="45" stroke="#ffffff" stroke-width="1.2" opacity="0.6" stroke-linecap="round"/>
-  <circle cx="42" cy="43" r="2" fill="#0f172a"/>
-  <circle cx="58" cy="43" r="2" fill="#0f172a"/>
-  <circle cx="42.6" cy="42.4" r="0.6" fill="#ffffff"/>
-  <circle cx="58.6" cy="42.4" r="0.6" fill="#ffffff"/>
-  <path d="M50 44 L49.2 50 H51.8" stroke="#d49b72" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M45 54 Q50 57.5 55 54" stroke="#8d4b38" stroke-width="1.7" stroke-linecap="round" fill="none"/>
-  <circle cx="77" cy="77" r="13" fill="#111b21" stroke="#202c33" stroke-width="2"/>
-  <circle cx="77" cy="77" r="11" fill="url(#budi-badge)"/>
-  <path d="M73 75 L70.5 77 L73 79" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M81 75 L83.5 77 L81 79" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <line x1="78.5" y1="73.5" x2="75.5" y2="80.5" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
-</svg>`,
-
-  rian: `<svg viewBox="0 0 100 100" width="100%" height="100%">
-  <defs>
-    <linearGradient id="rian-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#431407"/>
-      <stop offset="100%" stop-color="#ea580c"/>
-    </linearGradient>
-    <linearGradient id="rian-skin" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#fed7aa"/>
-      <stop offset="100%" stop-color="#fba86b"/>
-    </linearGradient>
-    <linearGradient id="rian-hair" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#2d1b11"/>
-      <stop offset="100%" stop-color="#190e07"/>
-    </linearGradient>
-    <linearGradient id="rian-hoodie" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#374151"/>
-      <stop offset="100%" stop-color="#1f2937"/>
-    </linearGradient>
-    <linearGradient id="rian-bolt" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fef08a"/>
-      <stop offset="100%" stop-color="#f59e0b"/>
-    </linearGradient>
-  </defs>
-  <circle cx="50" cy="50" r="50" fill="url(#rian-bg)"/>
-  <circle cx="50" cy="42" r="28" fill="#ea580c" opacity="0.22"/>
-  <path d="M22 98 C24 76 34 68 50 68 C66 68 76 76 78 98 Z" fill="url(#rian-hoodie)"/>
-  <path d="M38 72 Q50 82 62 72 Q50 90 38 72 Z" fill="#111827"/>
-  <line x1="45" y1="78" x2="43" y2="92" stroke="#ea580c" stroke-width="1.8" stroke-linecap="round"/>
-  <line x1="55" y1="78" x2="57" y2="92" stroke="#ea580c" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M30 63 C30 73 70 73 70 63" stroke="#111827" stroke-width="5" stroke-linecap="round" fill="none"/>
-  <rect x="25" y="55" width="8" height="15" rx="4" fill="#ea580c" stroke="#111827" stroke-width="1.5"/>
-  <rect x="67" y="55" width="8" height="15" rx="4" fill="#ea580c" stroke="#111827" stroke-width="1.5"/>
-  <path d="M43 50 H57 V65 C57 68 54 70 50 70 C46 70 43 68 43 65 Z" fill="url(#rian-skin)"/>
-  <ellipse cx="32" cy="46" rx="3.6" ry="6" fill="#fba86b"/>
-  <ellipse cx="68" cy="46" rx="3.6" ry="6" fill="#fba86b"/>
-  <path d="M34 39 C34 26 41 22 50 22 C59 22 66 26 66 39 C66 53 59 61 50 61 C41 61 34 53 34 39 Z" fill="url(#rian-skin)"/>
-  <path d="M31 35 C29 23 37 14 50 14 C62 14 69 21 68 32 C65 30 63 26 58 28 C54 23 48 24 44 26 C40 23 35 27 31 35 Z" fill="url(#rian-hair)"/>
-  <path d="M40 18 Q45 25 43 30" stroke="#3d2416" stroke-width="2" stroke-linecap="round" fill="none"/>
-  <path d="M50 17 Q54 24 57 28" stroke="#3d2416" stroke-width="2" stroke-linecap="round" fill="none"/>
-  <path d="M37 35 Q42 33 46 36" stroke="#2d1b11" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-  <path d="M54 36 Q58 33 63 35" stroke="#2d1b11" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-  <ellipse cx="42" cy="42" rx="2.5" ry="3" fill="#1f2937"/>
-  <ellipse cx="58" cy="42" rx="2.5" ry="3" fill="#1f2937"/>
-  <circle cx="42.8" cy="41" r="0.9" fill="#ffffff"/>
-  <circle cx="58.8" cy="41" r="0.9" fill="#ffffff"/>
-  <path d="M50 43 L48.8 49 H52.2" stroke="#d97736" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M43 53 Q50 59 57 53" stroke="#9a3412" stroke-width="2" stroke-linecap="round" fill="none"/>
-  <circle cx="77" cy="77" r="13" fill="#111b21" stroke="#202c33" stroke-width="2"/>
-  <circle cx="77" cy="77" r="11" fill="#ea580c"/>
-  <path d="M78 69 L72 77 H77 L75 85 L83 75 H78 Z" fill="url(#rian-bolt)"/>
-</svg>`,
-
-  group: `<svg viewBox="0 0 100 100" width="100%" height="100%">
-  <defs>
-    <linearGradient id="grp-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0a2a24"/>
-      <stop offset="100%" stop-color="#005c4b"/>
-    </linearGradient>
-  </defs>
-  <circle cx="50" cy="50" r="50" fill="url(#grp-bg)"/>
-  <circle cx="50" cy="50" r="44" fill="none" stroke="#00a884" stroke-width="1" stroke-dasharray="3 3" opacity="0.3"/>
-  <g opacity="0.9">
-    <circle cx="30" cy="38" r="12" fill="#0284c7"/>
-    <path d="M12 76 C14 58 24 54 34 54 C42 54 48 57 51 68 C45 74 36 77 12 76 Z" fill="#0369a1"/>
-    <circle cx="28" cy="37" r="3.5" stroke="#ffffff" stroke-width="1.2" fill="none" opacity="0.8"/>
-    <circle cx="36" cy="37" r="3.5" stroke="#ffffff" stroke-width="1.2" fill="none" opacity="0.8"/>
-  </g>
-  <g opacity="0.9">
-    <circle cx="70" cy="38" r="12" fill="#ea580c"/>
-    <path d="M88 76 C86 58 76 54 66 54 C58 54 52 57 49 68 C55 74 64 77 88 76 Z" fill="#c2410c"/>
-    <path d="M60 40 C60 48 80 48 80 40" stroke="#fef08a" stroke-width="1.6" fill="none" opacity="0.85"/>
-  </g>
-  <g>
-    <circle cx="50" cy="34" r="14.5" fill="#08201a"/>
-    <circle cx="50" cy="34" r="14" fill="#00a884"/>
-    <path d="M26 82 C28 62 40 54 50 54 C60 54 72 62 74 82 Z" fill="#004d3f"/>
-    <path d="M43 54 L50 63 L57 54 Z" fill="#111b21"/>
-    <path d="M50 23 L52 27 L56 27.5 L53 30 L54 34 L50 32 L46 34 L47 30 L44 27.5 L48 27 Z" fill="#fbbf24"/>
-  </g>
-  <circle cx="78" cy="78" r="13" fill="#111b21" stroke="#202c33" stroke-width="2"/>
-  <circle cx="78" cy="78" r="11" fill="#00a884"/>
-  <path d="M74 78 L77 81 L83 75" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-</svg>`
-};
+const BUILTIN_AVATARS = Object.freeze({
+  bayu: `<span class="avatar-monogram" data-avatar="bayu" role="img" aria-label="Boss Bayu">B</span>`,
+  budi: `<span class="avatar-monogram" data-avatar="budi" role="img" aria-label="Budi">B</span>`,
+  rian: `<span class="avatar-monogram" data-avatar="rian" role="img" aria-label="Rian">R</span>`,
+  group: `<span class="avatar-monogram" data-avatar="group" role="img" aria-label="Tim Proyek">T</span>`
+});
 
 const SVG_ICONS = {
-  bayu: SVG_PORTRAITS.bayu,
-  crown: SVG_PORTRAITS.bayu,
-  budi: SVG_PORTRAITS.budi,
-  rian: SVG_PORTRAITS.rian,
-  group: SVG_PORTRAITS.group,
+  bayu: BUILTIN_AVATARS.bayu,
+  crown: BUILTIN_AVATARS.bayu,
+  budi: BUILTIN_AVATARS.budi,
+  rian: BUILTIN_AVATARS.rian,
+  group: BUILTIN_AVATARS.group,
   reply: `<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>`,
   doc: `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`,
   image: `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>`,
@@ -286,21 +101,21 @@ const CHAT_METADATA = {
     id: "group",
     title: "Tim Proyek Boss Bayu",
     status: "Boss Bayu, Budi, Rian",
-    avatarSvg: SVG_ICONS.group,
+    avatarMarkup: SVG_ICONS.group,
     avatarClass: "avatar-group"
   },
   direct_budi: {
     id: "direct_budi",
     title: "Budi (Tech Lead)",
     status: "online",
-    avatarSvg: SVG_ICONS.budi,
+    avatarMarkup: SVG_ICONS.budi,
     avatarClass: "avatar-budi"
   },
   direct_rian: {
     id: "direct_rian",
     title: "Rian (Developer Lapangan)",
     status: "online",
-    avatarSvg: SVG_ICONS.rian,
+    avatarMarkup: SVG_ICONS.rian,
     avatarClass: "avatar-rian"
   }
 };
@@ -755,7 +570,7 @@ function switchChat(chatId) {
   document.getElementById("chatRoomTitle").textContent = meta.title;
   document.getElementById("chatRoomStatus").textContent = meta.status;
   const headerAvatar = document.getElementById("headerAvatar");
-  headerAvatar.innerHTML = meta.avatarSvg;
+  headerAvatar.innerHTML = meta.avatarMarkup;
   headerAvatar.className = `avatar-vector ${meta.avatarClass}`;
 
   // Keep loop / stop control available in all chats
@@ -1670,12 +1485,12 @@ function renderStatusTimeline() {
     el.onclick = () => openStoryViewer("contacts", index);
 
     const isBudi = item.author === "budi";
-    const avatarSvg = isBudi ? SVG_ICONS.budi : SVG_ICONS.rian;
+    const avatarMarkup = isBudi ? SVG_ICONS.budi : SVG_ICONS.rian;
     const avatarClass = isBudi ? "avatar-budi" : "avatar-rian";
 
     el.innerHTML = `
       <div class="status-avatar-ring">
-        <div class="avatar-vector ${avatarClass}">${avatarSvg}</div>
+        <div class="avatar-vector ${avatarClass}">${avatarMarkup}</div>
       </div>
       <div class="status-info">
         <span class="status-author">${escapeHtml(item.authorName)}</span>
@@ -1726,13 +1541,13 @@ function loadStorySlide(index) {
   const avatarBox = document.getElementById("storyViewerAvatarBox");
   if (category === "user") {
     avatarBox.className = "avatar-vector avatar-bayu";
-    avatarBox.innerHTML = SVG_PORTRAITS.bayu;
+    avatarBox.innerHTML = BUILTIN_AVATARS.bayu;
   } else if (item.author === "budi") {
     avatarBox.className = "avatar-vector avatar-budi";
-    avatarBox.innerHTML = SVG_PORTRAITS.budi;
+    avatarBox.innerHTML = BUILTIN_AVATARS.budi;
   } else {
     avatarBox.className = "avatar-vector avatar-rian";
-    avatarBox.innerHTML = SVG_PORTRAITS.rian;
+    avatarBox.innerHTML = BUILTIN_AVATARS.rian;
   }
 
   const card = document.getElementById("storyViewerCard");
@@ -2042,7 +1857,7 @@ function openChatInfoModal() {
   
   const avatarEl = document.getElementById("chatInfoAvatar");
   avatarEl.className = `avatar-vector avatar-large ${meta.avatarClass}`;
-  avatarEl.innerHTML = meta.avatarSvg;
+  avatarEl.innerHTML = meta.avatarMarkup;
 
   const memberList = document.getElementById("chatInfoMemberList");
   memberList.innerHTML = "";
@@ -2091,7 +1906,7 @@ function startCall(contactId, callType = "voice") {
   document.getElementById("callContactName").textContent = contactName;
   const avatarBox = document.getElementById("callContactAvatar");
   avatarBox.className = `avatar-vector avatar-large ${contactId === "rian" ? "avatar-rian" : "avatar-budi"}`;
-  avatarBox.innerHTML = contactId === "rian" ? SVG_PORTRAITS.rian : SVG_PORTRAITS.budi;
+  avatarBox.innerHTML = contactId === "rian" ? BUILTIN_AVATARS.rian : BUILTIN_AVATARS.budi;
 
   document.getElementById("callTypeBadge").textContent = callType === "video" ? "PANGGILAN VIDEO" : "PANGGILAN SUARA";
   document.getElementById("callStatusLabel").textContent = "Memanggil...";
@@ -2179,7 +1994,7 @@ function showIncomingCallModal(call) {
   document.getElementById("incomingCallerName").textContent = call.contactName;
   const avatarBox = document.getElementById("incomingAvatar");
   avatarBox.className = `avatar-vector avatar-large ${call.contactId === "rian" ? "avatar-rian" : "avatar-budi"}`;
-  avatarBox.innerHTML = call.contactId === "rian" ? SVG_PORTRAITS.rian : SVG_PORTRAITS.budi;
+  avatarBox.innerHTML = call.contactId === "rian" ? BUILTIN_AVATARS.rian : BUILTIN_AVATARS.budi;
 
   document.getElementById("incomingCallType").textContent = `Panggilan ${call.type === "video" ? "Video" : "Suara"} WhatsApp Masuk...`;
 
@@ -2208,11 +2023,11 @@ function renderCallsList() {
     const el = document.createElement("div");
     el.className = "call-item";
     const isRian = call.contactId === "rian";
-    const avatarSvg = isRian ? SVG_ICONS.rian : SVG_ICONS.budi;
+    const avatarMarkup = isRian ? SVG_ICONS.rian : SVG_ICONS.budi;
     const arrow = call.direction === "outgoing" ? '<span class="call-icon-outgoing">↗</span>' : '<span class="call-icon-incoming">↙</span>';
 
     el.innerHTML = `
-      <div class="avatar-vector ${isRian ? "avatar-rian" : "avatar-budi"}">${avatarSvg}</div>
+      <div class="avatar-vector ${isRian ? "avatar-rian" : "avatar-budi"}">${avatarMarkup}</div>
       <div class="call-item-info">
         <span class="call-item-name">${escapeHtml(call.contactName)}</span>
         <span class="call-item-meta">${arrow} ${escapeHtml(call.dateFormatted || "Hari ini")} (${escapeHtml(call.duration || "00:00")})</span>
@@ -3124,6 +2939,8 @@ function populateSettingsModal() {
       }
     })
     .catch(() => {});
+
+  window.AntigravitySetup?.refresh();
 
   // Load and render Auth Vault in Settings
   loadAuthVault();

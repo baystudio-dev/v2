@@ -1,38 +1,43 @@
-/* Quiet identity system for the built-in roster, without decorative portraits. */
-.chat-list .avatar-vector.avatar-group,
-.chat-list .avatar-vector.avatar-budi,
-.chat-list .avatar-vector.avatar-rian,
-.chat-list .avatar-vector.avatar-bayu,
-.nav-bottom .avatar-vector.avatar-bayu {
+/* One identity component for static and dynamically rendered avatars. */
+.avatar-vector > .avatar-monogram {
   display: grid;
   place-items: center;
-  position: relative;
-  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,.08);
   border-radius: 50%;
   background: #334650;
-  border: 1px solid rgba(255,255,255,.08);
-}
-.chat-list .avatar-vector.avatar-group { background: #345c55; }
-.chat-list .avatar-vector.avatar-budi { background: #35516a; }
-.chat-list .avatar-vector.avatar-rian { background: #65503f; }
-.chat-list .avatar-vector.avatar-bayu,
-.nav-bottom .avatar-vector.avatar-bayu { background: #4b555e; }
-.chat-list .avatar-vector.avatar-group > svg,
-.chat-list .avatar-vector.avatar-budi > svg,
-.chat-list .avatar-vector.avatar-rian > svg,
-.chat-list .avatar-vector.avatar-bayu > svg,
-.nav-bottom .avatar-vector.avatar-bayu > svg { display: none; }
-.chat-list .avatar-vector.avatar-group::after { content: "T"; }
-.chat-list .avatar-vector.avatar-budi::after { content: "B"; }
-.chat-list .avatar-vector.avatar-rian::after { content: "R"; }
-.chat-list .avatar-vector.avatar-bayu::after,
-.nav-bottom .avatar-vector.avatar-bayu::after { content: "B"; }
-.chat-list .avatar-vector::after,
-.nav-bottom .avatar-vector.avatar-bayu::after {
   color: #f4f7f8;
   font: 650 20px/1 system-ui, sans-serif;
   letter-spacing: -.04em;
 }
-.nav-bottom .avatar-vector.avatar-bayu::after { font-size: 16px; }
-[data-theme="light"] .chat-list .avatar-vector,
-[data-theme="light"] .nav-bottom .avatar-vector.avatar-bayu { border-color: rgba(0,0,0,.06); }
+.avatar-monogram[data-avatar="group"] { background: #345c55; }
+.avatar-monogram[data-avatar="budi"] { background: #35516a; }
+.avatar-monogram[data-avatar="rian"] { background: #65503f; }
+.avatar-monogram[data-avatar="bayu"] { background: #4b555e; }
+.avatar-vector.avatar-large > .avatar-monogram { font-size: 32px; }
+.nav-bottom .avatar-monogram { font-size: 16px; }
+[data-theme="light"] .avatar-monogram { border-color: rgba(0,0,0,.06); }
+
+.engine-setup-card {
+  padding: 16px;
+  margin-bottom: 24px;
+  border: 1px solid var(--wa-border, rgba(128,128,128,.25));
+  border-radius: 10px;
+}
+.engine-setup-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+.engine-setup-heading h3 { font-size: 15px; margin: 0 0 4px; }
+.engine-setup-card p, #antigravityInstallModal p { font-size: 13px; line-height: 1.55; margin: 8px 0 12px; }
+.engine-setup-card p, .engine-setup-card small, #antigravityInstallModal small { color: var(--wa-text-secondary); }
+.engine-setup-badge { font-size: 11px; border: 1px solid currentColor; border-radius: 5px; padding: 4px 7px; align-self: flex-start; }
+.engine-setup-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.engine-setup-actions .btn { min-height: 44px; }
+.engine-setup-card small, #antigravityInstallModal small { display: block; line-height: 1.5; font-size: 12px; }
+.engine-install-command { margin: 16px 0; }
+.engine-install-command summary { cursor: pointer; padding: 10px 0; }
+.engine-install-command pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.5; padding: 12px; border: 1px solid var(--wa-border, rgba(128,128,128,.25)); border-radius: 6px; max-height: 220px; overflow: auto; }
+#antigravityInstallModal { z-index: 10001; }
+#antigravityInstallModal .modal-box { max-height: calc(100dvh - 24px); }
+#antigravityInstallModal .modal-box-body { overflow-y: auto; }
+.engine-setup-links a { color: var(--wa-teal, #008f78); text-decoration: underline; }

@@ -11,6 +11,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import java.io.BufferedWriter
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStreamWriter
 
@@ -22,6 +23,7 @@ class TerminalSession(
     private val workstationManager: WorkstationManager,
     private val prootManager: PRootManager,
     private val feedbackManager: TerminalFeedbackManager? = null,
+    private val requestedRootfs: File? = null,
     private val onOutput: (String) -> Unit
 ) {
     private enum class State { NEW, STARTING, RUNNING, FINISHED, CLOSED }
@@ -57,7 +59,7 @@ class TerminalSession(
                 check(prootManager.isPRootInstalled()) {
                     "PRoot belum tersedia untuk ABI perangkat ini."
                 }
-                val rootfs = workstationManager.getActiveRootfs()
+                val rootfs = requestedRootfs ?: workstationManager.getActiveRootfs()
                 val shellCmd = prootManager.buildCommand(
                     rootfsDir = rootfs,
                     command = listOf("/bin/sh"),
